@@ -1,5 +1,6 @@
 import cytoscape from "cytoscape";
 import { loadManifest, loadLength, bfsDistances } from "./graph.js";
+import { tierFor, buildStylesheet, colorForDistance, nodeDimensions } from "./styling.js";
 
 const FULL_GRAPH_CONFIRM_THRESHOLD = 2000;
 const DATALIST_POPULATE_THRESHOLD = 3000;
@@ -11,6 +12,7 @@ const distanceInput = document.getElementById("distance-input");
 const exploreButton = document.getElementById("explore-button");
 const fullGraphButton = document.getElementById("full-graph-button");
 const status = document.getElementById("status");
+const legend = document.getElementById("legend");
 
 let cy = null;
 let currentLength = null;
@@ -23,39 +25,45 @@ function getCy() {
   if (!cy) {
     cy = cytoscape({
       container: document.getElementById("graph-container"),
-      style: [
-        {
-          selector: "node",
-          style: {
-            label: "data(label)",
-            "font-size": 10,
-            "background-color": "data(color)",
-            width: 24,
-            height: 24,
-          },
-        },
-        {
-          selector: "node.root",
-          style: { "background-color": "#e63946", width: 34, height: 34 },
-        },
-        { selector: "edge", style: { width: 1, "line-color": "#999" } },
-      ],
+      minZoom: 0.05,
+      maxZoom: 6,
+      wheelSensitivity: 0.25,
     });
+    // Dense tiers hide labels by default; reveal on hover so any word is
+    // still reachable without cluttering the whole view.
+    cy.on("mouseover", "node", (event) => event.target.addClass("show-label"));
+    cy.on("mouseout", "node", (event) => event.target.removeClass("show-label"));
   }
   return cy;
 }
 
-const DISTANCE_COLORS = ["#e63946", "#f4a261", "#e9c46a", "#2a9d8f", "#264653", "#457b9d"];
-function colorForDistance(distance) {
-  return DISTANCE_COLORS[Math.min(distance, DISTANCE_COLORS.length - 1)];
+function renderLegend(maxDistance) {
+  legend.innerHTML = "";
+  if (maxDistance === null) {
+    legend.hidden = true;
+    return;
+  }
+  legend.hidden = false;
+  const rootItem = document.createElement("span");
+  rootItem.className = "legend-item";
+  rootItem.innerHTML = `<span class="legend-swatch" style="background:#e63946"></span>root`;
+  legend.appendChild(rootItem);
+  for (let distance = 1; distance <= maxDistance; distance++) {
+    const item = document.createElement("span");
+    item.className = "legend-item";
+    item.innerHTML = `<span class="legend-swatch" style="background:${colorForDistance(distance)}"></span>${distance} change${distance > 1 ? "s" : ""}`;
+    legend.appendChild(item);
+  }
 }
 
-function renderElements(elements, layoutName) {
+function renderElements(elements, tier, layout) {
   const instance = getCy();
+  instance.style(buildStylesheet(tier));
   instance.elements().remove();
   instance.add(elements);
-  instance.layout({ name: layoutName, animate: false }).run();
-  instance.fit(undefined, 30);
+  instance.autoungrabify(tier.locked);
+  instance.layout(layout).run();
+  instance.fit(undefined, 40);
 }
 
 async function ensureLengthLoaded(length) {
@@ -95,14 +103,20 @@ async function explore() {
   }
 
   const distances = bfsDistances(data.adjacency, startIndex, maxDistance);
-  const nodes = [...distances.entries()].map(([index, distance]) => ({
-    data: {
-      id: String(index),
-      label: data.words[index],
-      color: colorForDistance(distance),
-    },
-    classes: index === startIndex ? "root" : undefined,
-  }));
+  const tier = tierFor(distances.size);
+  const nodes = [...distances.entries()].map(([index, distance]) => {
+    const isRoot = index === startIndex;
+    const label = data.words[index];
+    return {
+      data: {
+        id: String(index),
+        label,
+        color: colorForDistance(distance),
+        ...nodeDimensions(label, tier, isRoot),
+      },
+      classes: isRoot ? "root" : undefined,
+    };
+  });
 
   const edges = [];
   for (const index of distances.keys()) {
@@ -113,7 +127,18 @@ async function explore() {
     }
   }
 
-  renderElements([...nodes, ...edges], "breadthfirst");
+  renderElements([...nodes, ...edges], tier, {
+    name: "breadthfirst",
+    roots: `#${startIndex}`,
+    circle: true,
+    avoidOverlap: true,
+    spacingFactor: tier.spacingFactor,
+    animate: nodes.length <= 300,
+    animationDuration: 300,
+    fit: true,
+    padding: 40,
+  });
+  renderLegend(maxDistance);
   setStatus(`${nodes.length} words within ${maxDistance} change(s) of "${word}".`);
 }
 
@@ -132,8 +157,9 @@ async function showFullGraph() {
     return;
   }
 
+  const tier = tierFor(data.words.length);
   const nodes = data.words.map((word, index) => ({
-    data: { id: String(index), label: word, color: "#457b9d" },
+    data: { id: String(index), label: word, color: "#457b9d", ...nodeDimensions(word, tier, false) },
   }));
   const edges = [];
   data.adjacency.forEach((neighbors, index) => {
@@ -144,8 +170,23 @@ async function showFullGraph() {
     }
   });
 
-  const layoutName = data.words.length > FULL_GRAPH_CONFIRM_THRESHOLD ? "grid" : "cose";
-  renderElements([...nodes, ...edges], layoutName);
+  const useCose = data.words.length <= FULL_GRAPH_CONFIRM_THRESHOLD;
+  renderElements(
+    [...nodes, ...edges],
+    tier,
+    useCose
+      ? {
+          name: "cose",
+          animate: false,
+          nodeRepulsion: 8000,
+          idealEdgeLength: 60,
+          avoidOverlap: true,
+          fit: true,
+          padding: 30,
+        }
+      : { name: "grid", fit: true, padding: 10, avoidOverlap: true }
+  );
+  renderLegend(null);
   setStatus(`Showing all ${data.words.length} words of length ${length} (${edges.length} edges).`);
 }
 
