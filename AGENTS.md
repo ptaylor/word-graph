@@ -141,15 +141,24 @@ Full specification: [`graph/README.md`](graph/README.md).
 
 ## Technology Stack
 
-_No technology choices have been made yet — this is a fresh repository. The
-first contribution that picks a language/framework/library must fill in this
-section per the template above, and must add corresponding entries under
-"Development Commands"._
+### Node.js
+- **Role**: build tooling — generates `graph/*.json` from
+  `dictionaries/en-gb/words.txt` (see [`scripts/build-graph.mjs`](scripts/build-graph.mjs)).
+  Chosen for zero-friction scripting and because the eventual visualization
+  is expected to be a web UI, keeping the whole stack in one language.
+- **Version**: 20+ (native ESM, no transpilation needed). Developed against 25.8.1.
+- **Best Practices**:
+  - Use native ESM (`"type": "module"` in `package.json`, `.mjs`/`import`),
+    not CommonJS `require`.
+  - Prefer `node:fs/promises` async APIs over sync/callback variants.
+  - No dependencies yet — keep it that way for the build script unless a
+    real need arises (it's a straightforward file transform).
+- **Docs**: https://nodejs.org/docs/latest/api/
 
 ## Development Commands
 
-_To be filled in once a language/build tool is chosen (install, build, test,
-run, lint, etc.)._
+- `npm run build:graph` — regenerate `graph/*.json` from
+  `dictionaries/en-gb/words.txt`. Run whenever the source dictionary changes.
 
 ## Repository Layout
 
@@ -157,6 +166,7 @@ run, lint, etc.)._
   subdirectory per dialect. See [`dictionaries/README.md`](dictionaries/README.md).
 - `graph/` — precomputed word-adjacency graph, one JSON file per word length.
   Generated build artifact; see [`graph/README.md`](graph/README.md).
+- `scripts/` — Node.js build scripts (currently just `build-graph.mjs`).
 
 _To be kept up to date as the project structure grows further._
 

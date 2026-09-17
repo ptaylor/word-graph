@@ -1,0 +1,23 @@
+{
+  "name": "word-graph",
+  "version": "1.0.0",
+  "description": "Build and query a graph of words connected by single-letter changes",
+  "main": "index.js",
+  "scripts": {
+    "build:graph": "node scripts/build-graph.mjs",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ptaylor/word-graph.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/ptaylor/word-graph/issues"
+  },
+  "homepage": "https://github.com/ptaylor/word-graph#readme",
+  "private": "true"
+}

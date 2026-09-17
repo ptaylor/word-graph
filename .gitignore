@@ -2,6 +2,10 @@
 .DS_Store
 Thumbs.db
 
+# Node.js
+node_modules/
+npm-debug.log*
+
 # Editor/IDE
 .vscode/*
 !.vscode/extensions.json
