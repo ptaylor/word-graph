@@ -194,8 +194,9 @@ Full specification: [`graph/README.md`](graph/README.md).
   `dictionaries/en-gb/words.txt`. Run whenever the source dictionary changes.
 - `npm run words-at-distance -- <length> <distance>` — list every word of
   `<length>` letters that has a simple (no revisited word) traversal of
-  exactly `<distance>` one-letter changes starting from it. `<distance>` must
-  be an integer > 1. See [`scripts/words-at-distance.mjs`](scripts/words-at-distance.mjs).
+  exactly `<distance>` one-letter changes starting from it, printing the full
+  path with `→` between words. `<distance>` must be an integer > 1. See
+  [`scripts/words-at-distance.mjs`](scripts/words-at-distance.mjs).
 - `cd web && npm install` — install the visualization app's dependencies
   (first time only).
 - `cd web && npm run dev` — start the Vite dev server for the visualization

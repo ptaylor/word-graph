@@ -2,6 +2,7 @@
 // CLI: list words of a given length that have a simple traversal of exactly
 // the given distance (a path of that many one-letter-change edges, visiting
 // no word twice -- no cycles, and therefore no immediate reversals either).
+// Each match is printed as the full path, e.g. "board \u2192 hoard \u2192 hoary".
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -28,23 +29,27 @@ function parseArgs(argv) {
   return { length, distance };
 }
 
-// Does a simple path (no repeated words) of exactly `distance` edges exist
-// starting at `start`? Backtracking DFS, exits as soon as one is found.
-function hasExactSimplePath(adjacency, start, distance) {
+// Finds a simple path (no repeated words) of exactly `distance` edges
+// starting at `start`. Backtracking DFS, exits as soon as one is found.
+// Returns the path as an array of node indices, or null if none exists.
+function findExactSimplePath(adjacency, start, distance) {
   const visited = new Set([start]);
+  const path = [start];
 
   function dfs(node, remaining) {
     if (remaining === 0) return true;
     for (const neighbor of adjacency[node]) {
       if (visited.has(neighbor)) continue;
       visited.add(neighbor);
+      path.push(neighbor);
       if (dfs(neighbor, remaining - 1)) return true;
+      path.pop();
       visited.delete(neighbor);
     }
     return false;
   }
 
-  return dfs(start, distance);
+  return dfs(start, distance) ? path.slice() : null;
 }
 
 // A simple path from `start` visits at most componentSize distinct words, so
@@ -101,13 +106,12 @@ async function main() {
   const matches = [];
   for (let i = 0; i < words.length; i++) {
     if (sizeOf[i] <= distance) continue; // component too small for a path this long
-    if (hasExactSimplePath(adjacency, i, distance)) {
-      matches.push(words[i]);
-    }
+    const path = findExactSimplePath(adjacency, i, distance);
+    if (path) matches.push(path.map((index) => words[index]).join(" \u2192 "));
   }
 
-  for (const word of matches) {
-    console.log(word);
+  for (const line of matches) {
+    console.log(line);
   }
   console.error(`${matches.length} of ${words.length} ${length}-letter words have a traversal of exactly ${distance}.`);
 }
