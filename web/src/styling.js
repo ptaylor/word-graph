@@ -138,5 +138,25 @@ export function buildStylesheet(tier) {
         "target-arrow-shape": "none",
       },
     },
+    {
+      selector: "node.path-node",
+      style: {
+        label: "data(label)",
+        "text-outline-width": 2,
+        "text-outline-color": "#ffffff",
+        "border-width": 4,
+        "border-color": "#f4a261",
+        "z-index": 12,
+      },
+    },
+    {
+      selector: "edge.path-edge",
+      style: {
+        "line-color": "#f4a261",
+        width: tier.edgeWidth + 2,
+        opacity: 1,
+        "z-index": 6,
+      },
+    },
   ];
 }

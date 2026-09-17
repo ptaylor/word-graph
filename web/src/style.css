@@ -93,6 +93,75 @@ body {
   margin-left: auto;
 }
 
+#layout {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+#path-panel {
+  width: 200px;
+  flex-shrink: 0;
+  padding: 1rem;
+  background: #ffffff;
+  border-right: 1px solid #e2e8f0;
+  overflow-y: auto;
+}
+
+#path-panel h2 {
+  margin: 0 0 0.75rem;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #64748b;
+}
+
+/* Vertical single-line timeline: a connecting rail with a dot per word. */
+#path-list {
+  list-style: none;
+  margin: 0;
+  padding: 0.3rem 0 0.3rem 1.25rem;
+  position: relative;
+}
+
+#path-list::before {
+  content: "";
+  position: absolute;
+  left: 0.4rem;
+  top: 0.8rem;
+  bottom: 0.8rem;
+  width: 2px;
+  background: #cbd5e1;
+}
+
+#path-list li {
+  position: relative;
+  padding: 0.5rem 0;
+  font-weight: 700;
+  color: #1d3557;
+}
+
+#path-list li::before {
+  content: "";
+  position: absolute;
+  left: -1.05rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  background: #457b9d;
+  box-shadow: 0 0 0 3px #ffffff;
+}
+
+#path-list li:first-child::before {
+  background: #e63946;
+}
+
+#path-list li:last-child::before {
+  background: #f4a261;
+}
+
 #graph-container {
   position: relative;
   flex: 1;

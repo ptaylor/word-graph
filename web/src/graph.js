@@ -37,3 +37,30 @@ export function bfsDistances(adjacency, startIndex, maxDistance) {
   }
   return distances;
 }
+
+// Returns the shortest path (array of node indices, start to target inclusive)
+// via BFS parent-tracking, or null if the target is unreachable from start.
+export function bfsPath(adjacency, startIndex, targetIndex) {
+  if (startIndex === targetIndex) return [startIndex];
+  const parent = new Map([[startIndex, null]]);
+  const queue = [startIndex];
+  let head = 0;
+  while (head < queue.length) {
+    const current = queue[head++];
+    for (const neighbor of adjacency[current]) {
+      if (parent.has(neighbor)) continue;
+      parent.set(neighbor, current);
+      if (neighbor === targetIndex) {
+        const path = [neighbor];
+        let node = current;
+        while (node !== null) {
+          path.push(node);
+          node = parent.get(node);
+        }
+        return path.reverse();
+      }
+      queue.push(neighbor);
+    }
+  }
+  return null;
+}

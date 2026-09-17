@@ -32,9 +32,15 @@
       <button id="full-graph-button">Show full graph</button>
       <span id="status"></span>
     </header>
-    <main id="graph-container">
-      <div id="legend" hidden></div>
-    </main>
+    <div id="layout">
+      <aside id="path-panel" hidden>
+        <h2>Path</h2>
+        <ol id="path-list"></ol>
+      </aside>
+      <main id="graph-container">
+        <div id="legend" hidden></div>
+      </main>
+    </div>
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>

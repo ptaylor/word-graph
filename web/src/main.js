@@ -1,5 +1,5 @@
 import cytoscape from "cytoscape";
-import { loadManifest, loadLength, bfsDistances } from "./graph.js";
+import { loadManifest, loadLength, bfsDistances, bfsPath } from "./graph.js";
 import { tierFor, buildStylesheet, colorForDistance, nodeDimensions } from "./styling.js";
 
 const FULL_GRAPH_CONFIRM_THRESHOLD = 2000;
@@ -18,11 +18,14 @@ const status = document.getElementById("status");
 const legend = document.getElementById("legend");
 const hoverWord = document.getElementById("hover-word");
 const hoverMeta = document.getElementById("hover-meta");
+const pathPanel = document.getElementById("path-panel");
+const pathList = document.getElementById("path-list");
 const DEFAULT_TITLE = hoverWord.textContent;
 
 let cy = null;
 let currentLength = null;
 let wordCountByLength = new Map();
+let currentExplore = null; // { data, startIndex } for the active search, used by path-on-click
 
 function setStatus(message) {
   status.textContent = message;
@@ -55,6 +58,7 @@ function getCy() {
       event.target.removeClass("show-label");
       resetHoverTitle();
     });
+    cy.on("tap", "node", (event) => showPath(Number(event.target.id())));
   }
   return cy;
 }
@@ -74,6 +78,43 @@ function showHoverTitle(node) {
 function resetHoverTitle() {
   hoverWord.textContent = DEFAULT_TITLE;
   hoverMeta.textContent = "";
+}
+
+// Renders the shortest path from the current search word to a clicked node
+// as a vertical list on the left, and highlights it in the main graph.
+function showPath(targetIndex) {
+  if (!currentExplore) return;
+  const { data, startIndex } = currentExplore;
+  const path = bfsPath(data.adjacency, startIndex, targetIndex);
+  const instance = getCy();
+  instance.elements(".path-node, .path-edge").removeClass("path-node path-edge");
+
+  if (!path || path.length < 2) {
+    hidePathPanel();
+    return;
+  }
+
+  pathList.innerHTML = "";
+  for (const index of path) {
+    const item = document.createElement("li");
+    item.textContent = data.words[index];
+    pathList.appendChild(item);
+  }
+  pathPanel.hidden = false;
+
+  for (const index of path) {
+    instance.getElementById(String(index)).addClass("path-node");
+  }
+  for (let i = 0; i < path.length - 1; i++) {
+    const [a, b] = [path[i], path[i + 1]].sort((x, y) => x - y);
+    instance.getElementById(`${a}-${b}`).addClass("path-edge");
+  }
+}
+
+function hidePathPanel() {
+  pathPanel.hidden = true;
+  pathList.innerHTML = "";
+  if (cy) cy.elements(".path-node, .path-edge").removeClass("path-node path-edge");
 }
 
 function renderLegend(minDistance, maxDistance) {
@@ -135,6 +176,8 @@ async function explore() {
     return;
   }
 
+  hidePathPanel();
+
   // The word's own length determines which per-length graph to search --
   // sync the slider to match rather than trusting whatever it was set to.
   const length = word.length;
@@ -183,12 +226,14 @@ async function explore() {
   }
 
   if (nodes.length === 0) {
+    currentExplore = null;
     renderElements([], tier, { name: "grid" });
     renderLegend(minDistance, maxDistance);
     setStatus(`No words ${minDistance}\u2013${maxDistance} change(s) from "${word}".`);
     return;
   }
 
+  currentExplore = { data, startIndex };
   const layoutRoot = distances.has(startIndex)
     ? startIndex
     : [...distances.entries()].sort((a, b) => a[1] - b[1])[0][0];
@@ -222,6 +267,9 @@ async function showFullGraph() {
     setStatus("Cancelled.");
     return;
   }
+
+  currentExplore = null;
+  hidePathPanel();
 
   const tier = tierFor(data.words.length);
   const nodes = data.words.map((word, index) => ({
