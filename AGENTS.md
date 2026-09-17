@@ -111,24 +111,14 @@ whatever version identifier is available rather than omitting it.
 
 ### Graph Data Format
 
+Full specification: [`graph/README.md`](graph/README.md).
+
 - **Model**: nodes are words, edges connect same-length words differing in
   exactly one letter position. Edges never cross word lengths, so the graph
   splits cleanly into one independent subgraph per length.
 - **Storage**: one JSON file per word length, e.g. `graph/5.json`,
-  `graph/6.json`, ... Each file has the shape:
-
-  ```json
-  {
-    "length": 5,
-    "words": ["aback", "abaft", "..."],
-    "adjacency": [[12, 45], [3, 99, 214], "..."]
-  }
-  ```
-
-  `adjacency[i]` is the list of indices into `words` that are one-letter
-  neighbors of `words[i]`. Integer indices (not repeated word strings) keep
-  files small and make BFS traversal simple array lookups instead of string
-  hashing.
+  `graph/6.json`, ... See [`graph/README.md`](graph/README.md) for the exact
+  schema (fields, index semantics, guarantees).
 - **Why per-length JSON, not a database**: measured against the current
   `dictionaries/en-gb/words.txt` (79,342 words), the full graph has 62,895
   edges; the largest single length file (7 letters) is ~240 KB of JSON, and
@@ -165,6 +155,8 @@ run, lint, etc.)._
 
 - `dictionaries/` — word list resources used to build the graph, one
   subdirectory per dialect. See [`dictionaries/README.md`](dictionaries/README.md).
+- `graph/` — precomputed word-adjacency graph, one JSON file per word length.
+  Generated build artifact; see [`graph/README.md`](graph/README.md).
 
 _To be kept up to date as the project structure grows further._
 
