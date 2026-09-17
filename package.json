@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "build:graph": "node scripts/build-graph.mjs",
+    "words-at-distance": "node scripts/words-at-distance.mjs",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {

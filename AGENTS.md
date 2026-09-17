@@ -192,6 +192,10 @@ Full specification: [`graph/README.md`](graph/README.md).
 
 - `npm run build:graph` — regenerate `graph/*.json` from
   `dictionaries/en-gb/words.txt`. Run whenever the source dictionary changes.
+- `npm run words-at-distance -- <length> <distance>` — list every word of
+  `<length>` letters that has a simple (no revisited word) traversal of
+  exactly `<distance>` one-letter changes starting from it. `<distance>` must
+  be an integer > 1. See [`scripts/words-at-distance.mjs`](scripts/words-at-distance.mjs).
 - `cd web && npm install` — install the visualization app's dependencies
   (first time only).
 - `cd web && npm run dev` — start the Vite dev server for the visualization
@@ -206,7 +210,8 @@ Full specification: [`graph/README.md`](graph/README.md).
 - `graph/` — precomputed word-adjacency graph, one JSON file per word length
   plus `manifest.json` (lengths present and their word/edge counts). Generated
   build artifact; see [`graph/README.md`](graph/README.md).
-- `scripts/` — Node.js build scripts (currently just `build-graph.mjs`).
+- `scripts/` — Node.js build scripts: `build-graph.mjs` (generates `graph/`)
+  and `words-at-distance.mjs` (CLI query over a generated graph).
 - `web/` — Vite + Cytoscape.js visualization app. Explore/search/pan-zoom the
   graph and run BFS distance queries. `web/public/graph` is a symlink to the
   top-level `graph/` directory.

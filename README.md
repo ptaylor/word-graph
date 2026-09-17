@@ -20,7 +20,7 @@ choices, and open design questions.
   JSON file per word length plus `manifest.json`. Generated from the
   dictionary by `scripts/build-graph.mjs` — never hand-edited.
 - [`scripts/`](scripts/build-graph.mjs) — the Node.js build script that
-  generates `graph/`.
+  generates `graph/`, plus the `words-at-distance.mjs` CLI query.
 - [`web/`](web) — the Vite + Cytoscape.js visualization app that reads
   `graph/*.json` and renders it in the browser.
 
@@ -35,6 +35,18 @@ npm run build:graph
 Regenerates every `graph/<length>.json` file and `graph/manifest.json` from
 [`dictionaries/en-gb/words.txt`](dictionaries/en-gb/words.txt). Run this
 whenever the source dictionary changes.
+
+## Finding words with a long traversal
+
+```sh
+npm run words-at-distance -- <length> <distance>
+```
+
+Lists every word of `<length>` letters that has a simple traversal (no word
+revisited — no cycles, so no reversals either) of exactly `<distance>`
+one-letter changes starting from it. `<distance>` must be an integer greater
+than 1. For example, `npm run words-at-distance -- 5 4` lists 5-letter words
+with a 4-step ladder starting from them.
 
 ## Running the visualization
 
