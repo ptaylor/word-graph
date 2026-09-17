@@ -8,6 +8,10 @@
   </head>
   <body>
     <header id="controls">
+      <div id="title-pane">
+        <span id="hover-word">Word Graph</span>
+        <span id="hover-meta"></span>
+      </div>
       <label class="slider-field">
         Word length: <span id="length-value"></span>
         <input id="length-slider" type="range" min="1" max="23" value="5" step="1" />
@@ -30,10 +34,6 @@
     </header>
     <main id="graph-container">
       <div id="legend" hidden></div>
-      <div id="hover-panel" hidden>
-        <span id="hover-word"></span>
-        <span id="hover-meta"></span>
-      </div>
     </main>
     <script type="module" src="/src/main.js"></script>
   </body>

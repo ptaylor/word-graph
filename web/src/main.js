@@ -16,9 +16,9 @@ const exploreButton = document.getElementById("explore-button");
 const fullGraphButton = document.getElementById("full-graph-button");
 const status = document.getElementById("status");
 const legend = document.getElementById("legend");
-const hoverPanel = document.getElementById("hover-panel");
 const hoverWord = document.getElementById("hover-word");
 const hoverMeta = document.getElementById("hover-meta");
+const DEFAULT_TITLE = hoverWord.textContent;
 
 let cy = null;
 let currentLength = null;
@@ -49,18 +49,17 @@ function getCy() {
     cy.on("mouseover", "node", (event) => {
       const node = event.target;
       node.addClass("show-label");
-      showHoverPanel(node);
+      showHoverTitle(node);
     });
     cy.on("mouseout", "node", (event) => {
       event.target.removeClass("show-label");
-      hideHoverPanel();
+      resetHoverTitle();
     });
-    cy.on("pan zoom", hideHoverPanel);
   }
   return cy;
 }
 
-function showHoverPanel(node) {
+function showHoverTitle(node) {
   hoverWord.textContent = node.data("label");
   const distance = node.data("distance");
   if (node.hasClass("root")) {
@@ -70,13 +69,11 @@ function showHoverPanel(node) {
   } else {
     hoverMeta.textContent = "";
   }
-  hoverPanel.hidden = false;
-  requestAnimationFrame(() => hoverPanel.classList.add("visible"));
 }
 
-function hideHoverPanel() {
-  hoverPanel.classList.remove("visible");
-  hoverPanel.hidden = true;
+function resetHoverTitle() {
+  hoverWord.textContent = DEFAULT_TITLE;
+  hoverMeta.textContent = "";
 }
 
 function renderLegend(minDistance, maxDistance) {
