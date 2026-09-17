@@ -39,7 +39,7 @@ whenever the source dictionary changes.
 ## Finding words with a long traversal
 
 ```sh
-npm run words-at-distance -- <length> <distance>
+npm run words-at-distance -- <length> <distance> [word]
 ```
 
 Lists every word of `<length>` letters that has a simple traversal (no word
@@ -50,6 +50,12 @@ alphabetically (so `motet → motel → hotel` is shown as
 `hotel → motel → motet`), and the full list is sorted. `<distance>` must be
 an integer greater than 1. For example, `npm run words-at-distance -- 5 4`
 lists 5-letter words with a 4-step ladder starting from them.
+
+Pass an optional `word` (must be `<length>` letters) to restrict the search
+to that word and list *every* distinct traversal of exactly `<distance>`
+starting from it, e.g. `npm run words-at-distance -- 5 2 hotel` lists all six
+2-step ladders starting at "hotel". The result count is capped at 10,000
+paths to avoid runaway memory use on large distances.
 
 ## Running the visualization
 
