@@ -16,6 +16,9 @@ const exploreButton = document.getElementById("explore-button");
 const fullGraphButton = document.getElementById("full-graph-button");
 const status = document.getElementById("status");
 const legend = document.getElementById("legend");
+const hoverPanel = document.getElementById("hover-panel");
+const hoverWord = document.getElementById("hover-word");
+const hoverMeta = document.getElementById("hover-meta");
 
 let cy = null;
 let currentLength = null;
@@ -43,10 +46,37 @@ function getCy() {
     });
     // Dense tiers hide labels by default; reveal on hover so any word is
     // still reachable without cluttering the whole view.
-    cy.on("mouseover", "node", (event) => event.target.addClass("show-label"));
-    cy.on("mouseout", "node", (event) => event.target.removeClass("show-label"));
+    cy.on("mouseover", "node", (event) => {
+      const node = event.target;
+      node.addClass("show-label");
+      showHoverPanel(node);
+    });
+    cy.on("mouseout", "node", (event) => {
+      event.target.removeClass("show-label");
+      hideHoverPanel();
+    });
+    cy.on("pan zoom", hideHoverPanel);
   }
   return cy;
+}
+
+function showHoverPanel(node) {
+  hoverWord.textContent = node.data("label");
+  const distance = node.data("distance");
+  if (node.hasClass("root")) {
+    hoverMeta.textContent = "root word";
+  } else if (distance !== undefined) {
+    hoverMeta.textContent = `${distance} change${distance === 1 ? "" : "s"} away`;
+  } else {
+    hoverMeta.textContent = "";
+  }
+  hoverPanel.hidden = false;
+  requestAnimationFrame(() => hoverPanel.classList.add("visible"));
+}
+
+function hideHoverPanel() {
+  hoverPanel.classList.remove("visible");
+  hoverPanel.hidden = true;
 }
 
 function renderLegend(minDistance, maxDistance) {
@@ -139,6 +169,7 @@ async function explore() {
         id: String(index),
         label,
         color: colorForDistance(distance),
+        distance,
         ...nodeDimensions(label, tier, isRoot),
       },
       classes: isRoot ? "root" : undefined,
