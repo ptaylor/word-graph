@@ -20,6 +20,7 @@ or a language/tooling choice lets that build step be implemented (see
 
 ```
 graph/
+  manifest.json
   1.json
   2.json
   3.json
@@ -30,6 +31,11 @@ graph/
 One file per distinct word length present in the source dictionary, named
 `<length>.json`. A UI that limits exploration to a specific word length loads
 exactly one file and nothing else.
+
+`manifest.json` lists every generated length without requiring a directory
+listing: `{ "lengths": [{ "length": 5, "wordCount": 5170, "edgeCount": 12274 }, ...] }`,
+sorted ascending by `length`. Consumers (e.g. the visualization app) fetch
+this first to populate a length selector.
 
 ## File schema
 

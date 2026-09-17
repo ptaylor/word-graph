@@ -64,17 +64,22 @@ async function main() {
   const byLength = groupByLength(words);
   await mkdir(outputDir, { recursive: true });
 
-  for (const [length, lengthWords] of byLength) {
+  const manifest = [];
+  for (const [length, lengthWords] of [...byLength.entries()].sort((a, b) => a[0] - b[0])) {
     lengthWords.sort();
     const adjacency = buildAdjacency(lengthWords);
+    const edgeCount = adjacency.reduce((sum, n) => sum + n.length, 0) / 2;
     const payload = { length, words: lengthWords, adjacency };
     const outputPath = path.join(outputDir, `${length}.json`);
     await writeFile(outputPath, JSON.stringify(payload));
-    console.log(
-      `graph/${length}.json: ${lengthWords.length} words, ` +
-        `${adjacency.reduce((sum, n) => sum + n.length, 0) / 2} edges`
-    );
+    manifest.push({ length, wordCount: lengthWords.length, edgeCount });
+    console.log(`graph/${length}.json: ${lengthWords.length} words, ${edgeCount} edges`);
   }
+
+  await writeFile(
+    path.join(outputDir, "manifest.json"),
+    JSON.stringify({ lengths: manifest })
+  );
 }
 
 main().catch((err) => {

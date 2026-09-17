@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Word Graph</title>
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <header id="controls">
+      <label>
+        Word length
+        <select id="length-select"></select>
+      </label>
+      <label>
+        Word
+        <input id="word-input" list="word-options" autocomplete="off" placeholder="e.g. cat" />
+        <datalist id="word-options"></datalist>
+      </label>
+      <label>
+        Max distance
+        <input id="distance-input" type="number" min="0" max="8" value="2" />
+      </label>
+      <button id="explore-button">Explore</button>
+      <button id="full-graph-button">Show full graph</button>
+      <span id="status"></span>
+    </header>
+    <main id="graph-container"></main>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

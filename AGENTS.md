@@ -155,18 +155,61 @@ Full specification: [`graph/README.md`](graph/README.md).
     real need arises (it's a straightforward file transform).
 - **Docs**: https://nodejs.org/docs/latest/api/
 
+### Vite
+- **Role**: dev server and build tool for the visualization web app in
+  [`web/`](web/). Serves `web/public/graph` (symlinked to the top-level
+  `graph/` directory) so the app always reads the latest generated graph
+  files without copying them.
+- **Version**: ^7.
+- **Best Practices**:
+  - Static assets that must keep a fixed URL path (here, `/graph/*.json`)
+    belong in `public/`, not `src/` — files under `public/` are served
+    as-is and copied verbatim on build.
+  - Keep `web/` as a self-contained npm project (its own `package.json`)
+    rather than merging it into the root build-tooling `package.json`,
+    since the two have unrelated dependency sets.
+- **Docs**: https://vite.dev/guide/
+
+### Cytoscape.js
+- **Role**: renders and lays out the word graph in the browser — nodes/edges,
+  pan/zoom, and the `breadthfirst`/`cose`/`grid` layouts used by the app.
+  Chosen over a from-scratch D3/canvas implementation because it already
+  provides graph-shaped interaction (pan/zoom, layouts, styling) out of the
+  box.
+- **Version**: ^3.30.
+- **Best Practices**:
+  - Build the full node/edge element array first, then call `cy.add()` once
+    — avoid adding elements one at a time, which triggers repeated re-layout.
+  - Pick the layout by graph size: `breadthfirst` for a BFS-rooted
+    exploration (radiates from the queried word), `cose` (force-directed)
+    only for smaller full-length graphs, `grid` as a fast fallback once node
+    count gets large enough that force-directed layout would be slow.
+  - Cytoscape's style parser doesn't support 4/8-digit hex colors
+    (`#8888`) — use 3/6-digit hex or `rgba()`.
+- **Docs**: https://js.cytoscape.org/
+
 ## Development Commands
 
 - `npm run build:graph` — regenerate `graph/*.json` from
   `dictionaries/en-gb/words.txt`. Run whenever the source dictionary changes.
+- `cd web && npm install` — install the visualization app's dependencies
+  (first time only).
+- `cd web && npm run dev` — start the Vite dev server for the visualization
+  app.
+- `cd web && npm run build` — produce a static production build of the
+  visualization app in `web/dist/`.
 
 ## Repository Layout
 
 - `dictionaries/` — word list resources used to build the graph, one
   subdirectory per dialect. See [`dictionaries/README.md`](dictionaries/README.md).
-- `graph/` — precomputed word-adjacency graph, one JSON file per word length.
-  Generated build artifact; see [`graph/README.md`](graph/README.md).
+- `graph/` — precomputed word-adjacency graph, one JSON file per word length
+  plus `manifest.json` (lengths present and their word/edge counts). Generated
+  build artifact; see [`graph/README.md`](graph/README.md).
 - `scripts/` — Node.js build scripts (currently just `build-graph.mjs`).
+- `web/` — Vite + Cytoscape.js visualization app. Explore/search/pan-zoom the
+  graph and run BFS distance queries. `web/public/graph` is a symlink to the
+  top-level `graph/` directory.
 
 _To be kept up to date as the project structure grows further._
 
@@ -182,8 +225,10 @@ Repository Layout) as work begins:
 - ~~Where/how the precomputed graph data is stored, and whether the graph is
   precomputed at build time or generated on demand.~~ Resolved — per-length
   JSON adjacency files, generated at build time; see "Graph Data Format" above.
-- Visualization approach (web-based graph rendering library, static site vs.
-  client/server split) — the chosen graph data format works for either.
+- ~~Visualization approach (web-based graph rendering library, static site vs.
+  client/server split).~~ Resolved — static client-side app, Vite +
+  Cytoscape.js, in `web/`; see "Technology Stack" above. No backend: the app
+  fetches `graph/*.json` directly and runs BFS queries in the browser.
 - Whether user session/view state (last search, saved views) is in scope.
 - Whether proper nouns should be included in the graph (currently excluded by
   the `dictionaries/en-gb/words.txt` cleaning step).
