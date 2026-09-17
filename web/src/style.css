@@ -50,6 +50,43 @@ body {
   background: #e2e8f0;
 }
 
+.slider-field {
+  min-width: 11rem;
+}
+
+.slider-field input[type="range"] {
+  padding: 0;
+  border: none;
+  width: 100%;
+  accent-color: #457b9d;
+}
+
+/* Two overlapping range inputs sharing one track, each thumb independently
+   draggable, to select a min/max distance band with a single control. */
+.dual-range {
+  position: relative;
+  display: block;
+  height: 1.4rem;
+}
+
+.dual-range input[type="range"] {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0.4rem;
+  margin: 0;
+  background: none;
+  pointer-events: none;
+}
+
+.dual-range input[type="range"]::-webkit-slider-thumb {
+  pointer-events: auto;
+}
+
+.dual-range input[type="range"]::-moz-range-thumb {
+  pointer-events: auto;
+}
+
 #status {
   font-size: 0.85rem;
   color: #64748b;

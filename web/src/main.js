@@ -5,10 +5,13 @@ import { tierFor, buildStylesheet, colorForDistance, nodeDimensions } from "./st
 const FULL_GRAPH_CONFIRM_THRESHOLD = 2000;
 const DATALIST_POPULATE_THRESHOLD = 3000;
 
-const lengthSelect = document.getElementById("length-select");
+const lengthSlider = document.getElementById("length-slider");
+const lengthValue = document.getElementById("length-value");
 const wordInput = document.getElementById("word-input");
 const wordOptions = document.getElementById("word-options");
-const distanceInput = document.getElementById("distance-input");
+const distanceMinSlider = document.getElementById("distance-min");
+const distanceMaxSlider = document.getElementById("distance-max");
+const distanceValue = document.getElementById("distance-value");
 const exploreButton = document.getElementById("explore-button");
 const fullGraphButton = document.getElementById("full-graph-button");
 const status = document.getElementById("status");
@@ -16,9 +19,18 @@ const legend = document.getElementById("legend");
 
 let cy = null;
 let currentLength = null;
+let wordCountByLength = new Map();
 
 function setStatus(message) {
   status.textContent = message;
+}
+
+function debounce(fn, delayMs) {
+  let timeoutId;
+  return (...args) => {
+    clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => fn(...args), delayMs);
+  };
 }
 
 function getCy() {
@@ -37,18 +49,20 @@ function getCy() {
   return cy;
 }
 
-function renderLegend(maxDistance) {
+function renderLegend(minDistance, maxDistance) {
   legend.innerHTML = "";
-  if (maxDistance === null) {
+  if (minDistance === null) {
     legend.hidden = true;
     return;
   }
   legend.hidden = false;
-  const rootItem = document.createElement("span");
-  rootItem.className = "legend-item";
-  rootItem.innerHTML = `<span class="legend-swatch" style="background:#e63946"></span>root`;
-  legend.appendChild(rootItem);
-  for (let distance = 1; distance <= maxDistance; distance++) {
+  if (minDistance === 0) {
+    const rootItem = document.createElement("span");
+    rootItem.className = "legend-item";
+    rootItem.innerHTML = `<span class="legend-swatch" style="background:#e63946"></span>root`;
+    legend.appendChild(rootItem);
+  }
+  for (let distance = Math.max(minDistance, 1); distance <= maxDistance; distance++) {
     const item = document.createElement("span");
     item.className = "legend-item";
     item.innerHTML = `<span class="legend-swatch" style="background:${colorForDistance(distance)}"></span>${distance} change${distance > 1 ? "s" : ""}`;
@@ -85,13 +99,25 @@ async function ensureLengthLoaded(length) {
 }
 
 async function explore() {
-  const length = Number(lengthSelect.value);
   const word = wordInput.value.trim().toLowerCase();
-  const maxDistance = Number(distanceInput.value);
+  const minDistance = Number(distanceMinSlider.value);
+  const maxDistance = Number(distanceMaxSlider.value);
 
   if (!word) {
     setStatus("Enter a word to explore.");
     return;
+  }
+
+  // The word's own length determines which per-length graph to search --
+  // sync the slider to match rather than trusting whatever it was set to.
+  const length = word.length;
+  if (!wordCountByLength.has(length)) {
+    setStatus(`No ${length}-letter dictionary available.`);
+    return;
+  }
+  if (Number(lengthSlider.value) !== length) {
+    lengthSlider.value = String(length);
+    updateLengthLabel(length);
   }
 
   setStatus(`Loading ${length}-letter graph...`);
@@ -102,7 +128,8 @@ async function explore() {
     return;
   }
 
-  const distances = bfsDistances(data.adjacency, startIndex, maxDistance);
+  const allDistances = bfsDistances(data.adjacency, startIndex, maxDistance);
+  const distances = new Map([...allDistances].filter(([, distance]) => distance >= minDistance));
   const tier = tierFor(distances.size);
   const nodes = [...distances.entries()].map(([index, distance]) => {
     const isRoot = index === startIndex;
@@ -127,9 +154,19 @@ async function explore() {
     }
   }
 
+  if (nodes.length === 0) {
+    renderElements([], tier, { name: "grid" });
+    renderLegend(minDistance, maxDistance);
+    setStatus(`No words ${minDistance}\u2013${maxDistance} change(s) from "${word}".`);
+    return;
+  }
+
+  const layoutRoot = distances.has(startIndex)
+    ? startIndex
+    : [...distances.entries()].sort((a, b) => a[1] - b[1])[0][0];
   renderElements([...nodes, ...edges], tier, {
     name: "breadthfirst",
-    roots: `#${startIndex}`,
+    roots: `#${layoutRoot}`,
     circle: true,
     avoidOverlap: true,
     spacingFactor: tier.spacingFactor,
@@ -138,12 +175,13 @@ async function explore() {
     fit: true,
     padding: 40,
   });
-  renderLegend(maxDistance);
-  setStatus(`${nodes.length} words within ${maxDistance} change(s) of "${word}".`);
+  renderLegend(minDistance, maxDistance);
+  const range = minDistance === maxDistance ? `${maxDistance}` : `${minDistance}–${maxDistance}`;
+  setStatus(`${nodes.length} words ${range} change(s) from "${word}".`);
 }
 
 async function showFullGraph() {
-  const length = Number(lengthSelect.value);
+  const length = Number(lengthSlider.value);
   setStatus(`Loading ${length}-letter graph...`);
   const data = await ensureLengthLoaded(length);
 
@@ -186,32 +224,81 @@ async function showFullGraph() {
         }
       : { name: "grid", fit: true, padding: 10, avoidOverlap: true }
   );
-  renderLegend(null);
+  renderLegend(null, null);
   setStatus(`Showing all ${data.words.length} words of length ${length} (${edges.length} edges).`);
+}
+
+function updateLengthLabel(length) {
+  const wordCount = wordCountByLength.get(length);
+  lengthValue.textContent = wordCount === undefined ? `${length} letters` : `${length} letters (${wordCount})`;
+}
+
+function updateDistanceLabel() {
+  const min = Number(distanceMinSlider.value);
+  const max = Number(distanceMaxSlider.value);
+  distanceValue.textContent = min === max ? `${max}` : `${min}–${max}`;
 }
 
 async function init() {
   setStatus("Loading manifest...");
   const lengths = await loadManifest();
-  lengthSelect.innerHTML = "";
-  for (const { length, wordCount } of lengths) {
-    const option = document.createElement("option");
-    option.value = length;
-    option.textContent = `${length} letters (${wordCount})`;
-    lengthSelect.appendChild(option);
-  }
+  wordCountByLength = new Map(lengths.map(({ length, wordCount }) => [length, wordCount]));
+
+  const minLength = lengths[0].length;
+  const maxLength = lengths[lengths.length - 1].length;
+  lengthSlider.min = String(minLength);
+  lengthSlider.max = String(maxLength);
+
   const defaultLength = lengths.find((l) => l.length === 5) ?? lengths[0];
-  lengthSelect.value = String(defaultLength.length);
+  lengthSlider.value = String(defaultLength.length);
+  updateLengthLabel(defaultLength.length);
+  updateDistanceLabel();
   await ensureLengthLoaded(defaultLength.length);
   setStatus("Ready.");
 }
+
+function handleLengthSliderChange() {
+  const length = Number(lengthSlider.value);
+  updateLengthLabel(length);
+  const word = wordInput.value.trim().toLowerCase();
+  if (word && word.length === length) {
+    explore();
+  } else {
+    ensureLengthLoaded(length).then(() =>
+      setStatus(`Loaded ${length}-letter dictionary (${wordCountByLength.get(length)} words). Enter a word or show the full graph.`)
+    );
+  }
+}
+
+function handleDistanceSliderChange() {
+  if (Number(distanceMinSlider.value) > Number(distanceMaxSlider.value)) {
+    distanceMinSlider.value = distanceMaxSlider.value;
+  }
+  updateDistanceLabel();
+  if (wordInput.value.trim()) explore();
+}
+
+const debouncedLengthChange = debounce(handleLengthSliderChange, 200);
+const debouncedDistanceChange = debounce(handleDistanceSliderChange, 200);
 
 exploreButton.addEventListener("click", explore);
 fullGraphButton.addEventListener("click", showFullGraph);
 wordInput.addEventListener("keydown", (event) => {
   if (event.key === "Enter") explore();
 });
-lengthSelect.addEventListener("change", () => ensureLengthLoaded(Number(lengthSelect.value)));
+wordInput.addEventListener("input", debounce(() => {
+  if (wordInput.value.trim()) explore();
+}, 300));
+lengthSlider.addEventListener("input", () => {
+  updateLengthLabel(Number(lengthSlider.value));
+  debouncedLengthChange();
+});
+for (const slider of [distanceMinSlider, distanceMaxSlider]) {
+  slider.addEventListener("input", () => {
+    updateDistanceLabel();
+    debouncedDistanceChange();
+  });
+}
 
 init().catch((err) => {
   console.error(err);

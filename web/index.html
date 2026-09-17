@@ -8,18 +8,21 @@
   </head>
   <body>
     <header id="controls">
-      <label>
-        Word length
-        <select id="length-select"></select>
+      <label class="slider-field">
+        Word length: <span id="length-value"></span>
+        <input id="length-slider" type="range" min="1" max="23" value="5" step="1" />
       </label>
       <label>
         Word
         <input id="word-input" list="word-options" autocomplete="off" placeholder="e.g. cat" />
         <datalist id="word-options"></datalist>
       </label>
-      <label>
-        Max distance
-        <input id="distance-input" type="number" min="0" max="8" value="2" />
+      <label class="slider-field">
+        Distance: <span id="distance-value"></span>
+        <span class="dual-range">
+          <input id="distance-min" type="range" min="0" max="8" value="0" step="1" />
+          <input id="distance-max" type="range" min="0" max="8" value="2" step="1" />
+        </span>
       </label>
       <button id="explore-button">Explore</button>
       <button id="full-graph-button">Show full graph</button>
