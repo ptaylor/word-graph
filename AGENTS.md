@@ -109,6 +109,46 @@ whatever version identifier is available rather than omitting it.
   [`dictionaries/README.md`](dictionaries/README.md)'s "Adding a new dictionary"
   steps and update this section with the new entry.
 
+### Graph Data Format
+
+- **Model**: nodes are words, edges connect same-length words differing in
+  exactly one letter position. Edges never cross word lengths, so the graph
+  splits cleanly into one independent subgraph per length.
+- **Storage**: one JSON file per word length, e.g. `graph/5.json`,
+  `graph/6.json`, ... Each file has the shape:
+
+  ```json
+  {
+    "length": 5,
+    "words": ["aback", "abaft", "..."],
+    "adjacency": [[12, 45], [3, 99, 214], "..."]
+  }
+  ```
+
+  `adjacency[i]` is the list of indices into `words` that are one-letter
+  neighbors of `words[i]`. Integer indices (not repeated word strings) keep
+  files small and make BFS traversal simple array lookups instead of string
+  hashing.
+- **Why per-length JSON, not a database**: measured against the current
+  `dictionaries/en-gb/words.txt` (79,342 words), the full graph has 62,895
+  edges; the largest single length file (7 letters) is ~240 KB of JSON, and
+  every length combined is ~1.7 MB raw (smaller gzipped). At this scale a
+  database/binary format buys nothing — plain JSON is simplest to generate,
+  diff, debug, and consume from any language, and per-length partitioning
+  directly matches the "limit graph to a specific word length" requirement:
+  loading a length means loading exactly one file, nothing more.
+- **Build time**: constructing the full adjacency (bucket by length +
+  wildcard pattern, e.g. `"c_t"` for `cat`) took well under a second for all
+  79,342 words. Treat these files as a **generated build artifact**: produce
+  them from `dictionaries/en-gb/words.txt` via a build step once a language
+  is chosen, don't hand-edit them, and re-run the build whenever the source
+  dictionary changes.
+- **Known data characteristic**: at ESDB size 60, 56% of words (44,439 of
+  79,342) have zero same-length one-letter neighbors and are isolated nodes.
+  Degree of the remaining connected words averages 3.6, max 30 (short common
+  words like `cot`, `mad`, `pat`). See the related open question below about
+  whether a smaller/denser dictionary size is preferable for this game.
+
 ## Technology Stack
 
 _No technology choices have been made yet — this is a fresh repository. The
@@ -135,13 +175,17 @@ Repository Layout) as work begins:
 
 - ~~Word list / dictionary source and licensing.~~ Resolved — see "Data Sources"
   above.
-- Graph construction algorithm for efficient adjacency discovery (e.g.
-  bucketing words by length + wildcard pattern instead of pairwise
-  comparison).
+- ~~Graph construction algorithm for efficient adjacency discovery.~~ Resolved
+  — bucket by length + wildcard pattern; see "Graph Data Format" above.
+- ~~Where/how the precomputed graph data is stored, and whether the graph is
+  precomputed at build time or generated on demand.~~ Resolved — per-length
+  JSON adjacency files, generated at build time; see "Graph Data Format" above.
 - Visualization approach (web-based graph rendering library, static site vs.
-  client/server split).
-- Where/how the precomputed graph data is stored, and whether the graph is
-  precomputed at build time or generated on demand.
+  client/server split) — the chosen graph data format works for either.
 - Whether user session/view state (last search, saved views) is in scope.
 - Whether proper nouns should be included in the graph (currently excluded by
   the `dictionaries/en-gb/words.txt` cleaning step).
+- Given 56% of the current word list is isolated (no same-length one-letter
+  neighbor — see "Graph Data Format"), whether to trim the dictionary to a
+  smaller/more-common ESDB size (e.g. 35 or 50) to produce a denser, more
+  useful graph, or keep size 60 and simply let isolated words show as such.
