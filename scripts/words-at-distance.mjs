@@ -2,7 +2,8 @@
 // CLI: list words of a given length that have a simple traversal of exactly
 // the given distance (a path of that many one-letter-change edges, visiting
 // no word twice -- no cycles, and therefore no immediate reversals either).
-// Each match is printed as the full path, e.g. "board \u2192 hoard \u2192 hoary".
+// Each match is printed as the full path, e.g. "board \u2192 hoard \u2192 hoary",
+// oriented to start from the alphabetically-first endpoint and sorted.
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -107,8 +108,15 @@ async function main() {
   for (let i = 0; i < words.length; i++) {
     if (sizeOf[i] <= distance) continue; // component too small for a path this long
     const path = findExactSimplePath(adjacency, i, distance);
-    if (path) matches.push(path.map((index) => words[index]).join(" \u2192 "));
+    if (!path) continue;
+    const pathWords = path.map((index) => words[index]);
+    // Canonicalize direction so the path always starts from whichever
+    // endpoint sorts first alphabetically, e.g. "motet -> motel -> hotel"
+    // is displayed as "hotel -> motel -> motet".
+    if (pathWords[pathWords.length - 1] < pathWords[0]) pathWords.reverse();
+    matches.push(pathWords.join(" \u2192 "));
   }
+  matches.sort();
 
   for (const line of matches) {
     console.log(line);

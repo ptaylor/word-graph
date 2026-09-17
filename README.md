@@ -45,9 +45,11 @@ npm run words-at-distance -- <length> <distance>
 Lists every word of `<length>` letters that has a simple traversal (no word
 revisited — no cycles, so no reversals either) of exactly `<distance>`
 one-letter changes starting from it, printing the full path with `→` between
-words, e.g. `board → hoard → hoary`. `<distance>` must be an integer greater
-than 1. For example, `npm run words-at-distance -- 5 4` lists 5-letter words
-with a 4-step ladder starting from them.
+words. Each path is oriented to start from whichever endpoint sorts first
+alphabetically (so `motet → motel → hotel` is shown as
+`hotel → motel → motet`), and the full list is sorted. `<distance>` must be
+an integer greater than 1. For example, `npm run words-at-distance -- 5 4`
+lists 5-letter words with a 4-step ladder starting from them.
 
 ## Running the visualization
 
