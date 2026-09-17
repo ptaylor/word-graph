@@ -55,6 +55,11 @@ this repo. If you're unsure of current best practices for a technology,
 research it (official docs) before writing the section rather than relying on
 possibly outdated knowledge.
 
+This includes keeping [`.gitignore`](.gitignore) up to date: when a language,
+package manager, build tool, or IDE/editor tooling is introduced, add its
+standard ignore patterns (build output, dependency/package directories,
+caches, local env files, editor metadata, etc.) in the same change.
+
 ### 2. Technology Stack section format
 
 Add new entries under "Technology Stack" using this template:

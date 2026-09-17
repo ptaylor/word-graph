@@ -1,0 +1,13 @@
+# OS cruft
+.DS_Store
+Thumbs.db
+
+# Editor/IDE
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# Local env/secrets
+.env
+.env.*
+!.env.example
