@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <!-- Word Graph icon: a small word-ladder chain, root node in red, each
+       hop shifting toward blue, tracing the app's own distance-color ramp. -->
+  <line x1="32" y1="30" x2="14" y2="50" stroke="#94a3b8" stroke-width="3" stroke-linecap="round" />
+  <line x1="32" y1="30" x2="50" y2="46" stroke="#94a3b8" stroke-width="3" stroke-linecap="round" />
+  <line x1="32" y1="30" x2="46" y2="12" stroke="#94a3b8" stroke-width="3" stroke-linecap="round" />
+
+  <circle cx="46" cy="12" r="7" fill="#457b9d" stroke="#ffffff" stroke-width="2" />
+  <circle cx="50" cy="46" r="7" fill="#f4a261" stroke="#ffffff" stroke-width="2" />
+  <circle cx="14" cy="50" r="7" fill="#2a9d8f" stroke="#ffffff" stroke-width="2" />
+  <circle cx="32" cy="30" r="9" fill="#e63946" stroke="#ffffff" stroke-width="2.5" />
+</svg>
