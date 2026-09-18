@@ -15,8 +15,7 @@
     <header id="topbar">
       <div id="brand">
         <img id="brand-mark" src="/logo.svg" alt="" width="84" height="84" />
-        <span id="hover-word">word graph</span>
-        <span id="hover-meta"></span>
+        <span id="brand-name">word graph</span>
       </div>
 
       <form id="search-form" role="search" autocomplete="off">
@@ -35,37 +34,32 @@
       </form>
 
       <div id="view-controls">
-        <label for="distance-min">Within</label>
-        <span class="dual-range">
-          <input
-            id="distance-min"
-            type="range"
-            min="0"
-            max="8"
-            value="0"
-            step="1"
-            aria-label="Minimum changes away"
-          />
-          <input
-            id="distance-max"
-            type="range"
-            min="0"
-            max="8"
-            value="2"
-            step="1"
-            aria-label="Maximum changes away"
-          />
-        </span>
+        <label for="distance-max">Within</label>
+        <input
+          id="distance-max"
+          type="range"
+          min="0"
+          max="8"
+          value="5"
+          step="1"
+          aria-label="Maximum changes away"
+        />
         <span id="distance-value"></span>
         <button id="all-words-button" type="button"></button>
       </div>
+
+      <!-- The word the pointer is over. It comes and goes, so it is its own
+           element rather than the brand. -->
+      <p id="pointed" hidden>
+        <span id="hover-word"></span>
+        <span id="hover-meta"></span>
+      </p>
 
       <p id="status"></p>
     </header>
 
     <div id="layout">
       <aside id="path-panel" hidden>
-        <h2>Path</h2>
         <ol id="path-list"></ol>
       </aside>
       <main id="graph-container">

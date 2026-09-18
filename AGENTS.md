@@ -180,10 +180,25 @@ Full specification: [`graph/README.md`](graph/README.md).
 - **Best Practices**:
   - Build the full node/edge element array first, then call `cy.add()` once
     — avoid adding elements one at a time, which triggers repeated re-layout.
-  - Pick the layout by graph size: `breadthfirst` for a BFS-rooted
-    exploration (radiates from the queried word), `cose` (force-directed)
-    only for smaller full-length graphs, `grid` as a fast fallback once node
-    count gets large enough that force-directed layout would be slow.
+  - Pick the layout by graph size: `cose` (force-directed) for both a
+    BFS-rooted exploration and a smaller full-length graph, `grid` as a fast
+    fallback once node count gets large enough that force-directed layout
+    would be slow. **Do not use `breadthfirst`** — the intuitive "radiates from
+    the queried word" choice. Measured against a `hotel` search, it spaced
+    nodes ~20x further apart than they are wide, so the result had to be fitted
+    at a zoom of 0.03–0.09 (a smear of sub-pixel dots): 9 nodes spanned 13,537
+    units and 566 nodes 7,621, where `cose` fits the same two graphs into 569
+    and 846 units (fit zoom ~0.65 for both). Neither `circle`, `avoidOverlap`
+    nor `spacingFactor` fixes it.
+  - A layout only measures the viewport at the moment it runs, and cytoscape
+    clamps to `minZoom` rather than complaining. So a layout run while the
+    container is `display: none` (e.g. laying out before switching the app from
+    its landing screen to the graph view) computes a zoom near zero, which the
+    clamp pins to the floor: the graph renders as an invisible dot with a pan of
+    ~0 and only repairs itself if something later resizes the window. Reveal the
+    canvas first, then lay out, and re-centre after anything that changes the
+    canvas width (here, the path panel appearing narrows it by 200px and drags
+    the root off centre by half of that).
   - Cytoscape's style parser doesn't support 4/8-digit hex colors
     (`#8888`) — use 3/6-digit hex or `rgba()`.
 - **Docs**: https://js.cytoscape.org/

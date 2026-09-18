@@ -78,11 +78,11 @@ a search screen — type any word and press **Enter** to see that word's
 neighborhood. The word's own length picks the graph, so there is no length to
 choose: `hotel` searches the 5-letter graph, `hotels` the 6-letter one.
 
-Once a graph is up, the **Within** control narrows the search to a band of
-change distances (0–2 by default), clicking a node lists the shortest path to it
-in the left-hand panel, and **All N-letter words** renders that whole length
-instead. The × in the search field — or **Escape** — clears back to the search
-screen.
+Once a graph is up, the **Within** slider sets how many changes away to include
+(1–8, default 5) and re-runs the search. Clicking a node lists the shortest path
+to it in the left-hand panel, and **All N-letter words** renders that whole
+length instead. The × in the search field — or **Escape** — clears back to the
+search screen.
 
 To produce a static production build instead:
 

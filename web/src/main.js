@@ -3,22 +3,21 @@ import { loadManifest, loadLength, bfsDistances, bfsPath } from "./graph.js";
 import { tierFor, buildStylesheet, colorForDistance, nodeDimensions } from "./styling.js";
 
 const FULL_GRAPH_CONFIRM_THRESHOLD = 2000;
-const DEFAULT_MAX_DISTANCE = 2;
+const DEFAULT_MAX_DISTANCE = 5;
 
 const searchForm = document.getElementById("search-form");
 const wordInput = document.getElementById("word-input");
 const clearButton = document.getElementById("word-input-clear");
-const distanceMinSlider = document.getElementById("distance-min");
 const distanceMaxSlider = document.getElementById("distance-max");
 const distanceValue = document.getElementById("distance-value");
 const allWordsButton = document.getElementById("all-words-button");
+const pointed = document.getElementById("pointed");
 const status = document.getElementById("status");
 const legend = document.getElementById("legend");
 const hoverWord = document.getElementById("hover-word");
 const hoverMeta = document.getElementById("hover-meta");
 const pathPanel = document.getElementById("path-panel");
 const pathList = document.getElementById("path-list");
-const DEFAULT_TITLE = hoverWord.textContent;
 
 let cy = null;
 let currentLength = null;
@@ -86,11 +85,13 @@ function showHoverTitle(node) {
   } else {
     hoverMeta.textContent = "";
   }
+  pointed.hidden = false;
 }
 
 function resetHoverTitle() {
-  hoverWord.textContent = DEFAULT_TITLE;
+  hoverWord.textContent = "";
   hoverMeta.textContent = "";
+  pointed.hidden = true;
 }
 
 // Renders the shortest path from the current search word to a clicked node
@@ -98,11 +99,17 @@ function resetHoverTitle() {
 function showPath(targetIndex) {
   if (!currentExplore) return;
   const { data, startIndex } = currentExplore;
-  const path = bfsPath(data.adjacency, startIndex, targetIndex);
   const instance = getCy();
+  // The searched word is selectable like any other, in which case its path is
+  // just itself. There is always something to show for the current selection.
+  if (instance.getElementById(String(targetIndex)).length === 0) {
+    hidePathPanel();
+    return;
+  }
+  const path = bfsPath(data.adjacency, startIndex, targetIndex);
   instance.elements(".path-node, .path-edge").removeClass("path-node path-edge");
 
-  if (!path || path.length < 2) {
+  if (!path) {
     hidePathPanel();
     return;
   }
@@ -124,41 +131,83 @@ function showPath(targetIndex) {
   }
 }
 
+// Puts the searched word in the middle of the canvas and scales so the furthest
+// word still fits around it. Fitting the whole graph and panning to the root
+// afterwards is not enough: when the graph is lopsided the pan shoves the far
+// side off screen. Sizing the view about the root keeps both -- the word
+// centred, and every word still visible.
+function centreOnRoot(padding = 40) {
+  if (!cy || !currentExplore) return;
+  const root = cy.getElementById(String(currentExplore.startIndex));
+  if (!root || root.length === 0) return;
+
+  const all = cy.elements().boundingBox();
+  const box = root.boundingBox();
+  const rx = (box.x1 + box.x2) / 2;
+  const ry = (box.y1 + box.y2) / 2;
+  // How far the graph reaches from the root, per axis, at its worst.
+  const reachX = Math.max(rx - all.x1, all.x2 - rx) || 1;
+  const reachY = Math.max(ry - all.y1, all.y2 - ry) || 1;
+
+  const spaceX = Math.max((cy.width() - padding * 2) / 2, 1);
+  const spaceY = Math.max((cy.height() - padding * 2) / 2, 1);
+  cy.zoom(Math.min(spaceX / reachX, spaceY / reachY));
+  cy.center(root);
+}
+
 function hidePathPanel() {
   pathPanel.hidden = true;
   pathList.innerHTML = "";
   if (cy) cy.elements(".path-node, .path-edge").removeClass("path-node path-edge");
 }
 
-function renderLegend(minDistance, maxDistance) {
+// One entry per change out from the searched word, plus the word itself.
+function renderLegend(maxDistance) {
   legend.innerHTML = "";
-  if (minDistance === null) {
+  if (maxDistance === null) {
     legend.hidden = true;
     return;
   }
   legend.hidden = false;
-  if (minDistance === 0) {
-    const rootItem = document.createElement("span");
-    rootItem.className = "legend-item";
-    rootItem.innerHTML = `<span class="legend-swatch" style="background:#e63946"></span>root`;
-    legend.appendChild(rootItem);
-  }
-  for (let distance = Math.max(minDistance, 1); distance <= maxDistance; distance++) {
+  const addItem = (color, text) => {
     const item = document.createElement("span");
     item.className = "legend-item";
-    item.innerHTML = `<span class="legend-swatch" style="background:${colorForDistance(distance)}"></span>${distance} change${distance > 1 ? "s" : ""}`;
+    item.innerHTML = `<span class="legend-swatch" style="background:${color}"></span>${text}`;
     legend.appendChild(item);
+  };
+  addItem("#e63946", "root");
+  for (let distance = 1; distance <= maxDistance; distance++) {
+    addItem(colorForDistance(distance), `${distance} change${distance > 1 ? "s" : ""}`);
   }
 }
 
-function renderElements(elements, tier, layout) {
+function renderElements(elements, tier, layoutOptions, onSettled) {
   const instance = getCy();
   instance.style(buildStylesheet(tier));
   instance.elements().remove();
   instance.add(elements);
   instance.autoungrabify(tier.locked);
-  instance.layout(layout).run();
-  instance.fit(undefined, 40);
+  // Pick up the container's real size. On a search from the landing screen the
+  // canvas has just become visible, and a layout that fits itself to a
+  // zero-width viewport produces a garbage zoom, which the minZoom clamp then
+  // pins to its floor -- a smear of sub-pixel dots that only repairs itself if
+  // something later resizes the window.
+  instance.resize();
+
+  const padding = layoutOptions.padding ?? 40;
+  // The layout is told not to fit itself. An animated layout has not reached
+  // its final positions when run() returns, so fitting then measures the
+  // starting positions; and a fit on layoutstop fires in the same tick as
+  // anything registered here, so it would undo a pan applied alongside it.
+  // Fitting and recentring therefore both happen at the end, in this order.
+  const layout = instance.layout({ ...layoutOptions, fit: false });
+  layout.one("layoutstop", () => {
+    // A search recentres on its own root, which subsumes fitting.
+    if (onSettled) onSettled();
+    else instance.fit(undefined, padding);
+  });
+  layout.run();
+  instance.fit(undefined, padding); // stands in if layoutstop never arrives
 }
 
 async function ensureLengthLoaded(length) {
@@ -170,7 +219,6 @@ async function ensureLengthLoaded(length) {
 
 async function explore() {
   const word = wordInput.value.trim().toLowerCase();
-  const minDistance = Number(distanceMinSlider.value);
   const maxDistance = Number(distanceMaxSlider.value);
 
   if (!word) {
@@ -196,8 +244,8 @@ async function explore() {
     return;
   }
 
-  const allDistances = bfsDistances(data.adjacency, startIndex, maxDistance);
-  const distances = new Map([...allDistances].filter(([, distance]) => distance >= minDistance));
+  // Everything out to the maximum, with the searched word always included.
+  const distances = bfsDistances(data.adjacency, startIndex, maxDistance);
   const tier = tierFor(distances.size);
   const nodes = [...distances.entries()].map(([index, distance]) => {
     const isRoot = index === startIndex;
@@ -208,7 +256,9 @@ async function explore() {
         label,
         color: colorForDistance(distance),
         distance,
-        ...nodeDimensions(label, tier, isRoot),
+        // Sized by distance: the searched word is the biggest box on screen and
+        // each ring outward is smaller.
+        ...nodeDimensions(label, tier, distance),
       },
       classes: isRoot ? "root" : undefined,
     };
@@ -226,31 +276,49 @@ async function explore() {
   if (nodes.length === 0) {
     currentExplore = null;
     renderElements([], tier, { name: "grid" });
-    renderLegend(minDistance, maxDistance);
+    renderLegend(null);
     setView("graph");
-    setStatus(`No words ${minDistance}\u2013${maxDistance} change(s) from "${word}".`, "error");
+    setStatus(`Nothing within ${maxDistance} change(s) of "${word}".`, "error");
     return;
   }
 
   currentExplore = { data, startIndex };
-  const layoutRoot = distances.has(startIndex)
-    ? startIndex
-    : [...distances.entries()].sort((a, b) => a[1] - b[1])[0][0];
-  renderElements([...nodes, ...edges], tier, {
-    name: "breadthfirst",
-    roots: `#${layoutRoot}`,
-    circle: true,
-    avoidOverlap: true,
-    spacingFactor: tier.spacingFactor,
-    animate: nodes.length <= 300,
-    animationDuration: 300,
-    fit: true,
-    padding: 40,
-  });
-  renderLegend(minDistance, maxDistance);
+  // Reveal the canvas before laying out: the layout measures the viewport.
   setView("graph");
-  const range = minDistance === maxDistance ? `${maxDistance}` : `${minDistance}\u2013${maxDistance}`;
-  setStatus(`${nodes.length} words ${range} change(s) from "${word}".`);
+  renderLegend(maxDistance);
+  // Force-directed. breadthfirst's circle mode was the original choice here
+  // because it "radiates from the queried word", but its radius grows far
+  // faster than the nodes do: it spread a 9-node result over 13,500 model
+  // units (nodes are ~40 units wide) and 566 nodes over 7,600, so fitting the
+  // result produced a zoom of 0.03-0.09 -- a smear of sub-pixel dots. cose
+  // packs the same graphs into 570 and 846 units respectively, i.e. a fit zoom
+  // of 0.65 in both cases. Measured over both sizes; grid scored similarly.
+  renderElements(
+    [...nodes, ...edges],
+    tier,
+    {
+      name: "cose",
+      idealEdgeLength: 70 * tier.spacingFactor,
+      nodeRepulsion: 12000,
+      gravity: 50,
+      numIter: 500,
+      randomize: false,
+      animate: nodes.length <= 300,
+      animationDuration: 300,
+      padding: 40,
+    },
+    centreOnRoot
+  );
+  // The searched word starts selected, so the panel is populated the moment the
+  // graph appears rather than waiting for a click.
+  showPath(startIndex);
+  // Showing that panel narrows the canvas by its width, which drags the root
+  // off centre by half of it (measured: 117px on a 1167px canvas). Re-fit once
+  // the panel is in place so "the searched word is centred" means centred in
+  // the space the graph actually has.
+  cy.resize();
+  centreOnRoot();
+  setStatus(`${nodes.length} words within ${maxDistance} change(s) of "${word}".`);
 }
 
 // Every word of the length already on screen. Reached from the graph view,
@@ -276,7 +344,8 @@ async function showAllWords() {
 
   const tier = tierFor(data.words.length);
   const nodes = data.words.map((word, index) => ({
-    data: { id: String(index), label: word, color: "#457b9d", ...nodeDimensions(word, tier, false) },
+    // No distance in the full-length view, so every word stays the same size.
+    data: { id: String(index), label: word, color: "#457b9d", ...nodeDimensions(word, tier) },
   }));
   const edges = [];
   data.adjacency.forEach((neighbors, index) => {
@@ -288,6 +357,9 @@ async function showAllWords() {
   });
 
   const useCose = data.words.length <= FULL_GRAPH_CONFIRM_THRESHOLD;
+  // Same reason as explore(): reveal the canvas before the layout measures it.
+  setView("graph");
+  renderLegend(null);
   renderElements(
     [...nodes, ...edges],
     tier,
@@ -303,15 +375,11 @@ async function showAllWords() {
         }
       : { name: "grid", fit: true, padding: 10, avoidOverlap: true }
   );
-  renderLegend(null, null);
-  setView("graph");
   setStatus(`Showing all ${data.words.length} words of length ${length} (${edges.length} edges).`);
 }
 
 function updateDistanceLabel() {
-  const min = Number(distanceMinSlider.value);
-  const max = Number(distanceMaxSlider.value);
-  distanceValue.textContent = min === max ? `${max}` : `${min}–${max}`;
+  distanceValue.textContent = distanceMaxSlider.value;
 }
 
 async function init() {
@@ -326,9 +394,6 @@ async function init() {
 }
 
 function handleDistanceSliderChange() {
-  if (Number(distanceMinSlider.value) > Number(distanceMaxSlider.value)) {
-    distanceMinSlider.value = distanceMaxSlider.value;
-  }
   updateDistanceLabel();
   // Only meaningful when a graph is on screen; on the landing it would fire a
   // search for whatever happened to be in the field.
@@ -337,7 +402,6 @@ function handleDistanceSliderChange() {
 
 function resetSearch() {
   wordInput.value = "";
-  distanceMinSlider.value = "0";
   distanceMaxSlider.value = String(DEFAULT_MAX_DISTANCE);
   updateDistanceLabel();
   setView("landing");
@@ -363,12 +427,19 @@ wordInput.addEventListener("keydown", (event) => {
 
 allWordsButton.addEventListener("click", showAllWords);
 
-for (const slider of [distanceMinSlider, distanceMaxSlider]) {
-  slider.addEventListener("input", () => {
-    updateDistanceLabel();
-    debouncedDistanceChange();
-  });
-}
+// Cytoscape measures its canvas once, at creation, and does not follow the
+// container itself. Without this the canvas keeps its original width when the
+// window changes and the graph drifts off-centre or off-screen entirely.
+window.addEventListener("resize", debounce(() => {
+  if (!cy) return;
+  cy.resize();
+  centreOnRoot();
+}, 150));
+
+distanceMaxSlider.addEventListener("input", () => {
+  updateDistanceLabel();
+  debouncedDistanceChange();
+});
 
 init().catch((err) => {
   console.error(err);

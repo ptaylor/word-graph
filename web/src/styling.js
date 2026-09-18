@@ -66,16 +66,50 @@ export function colorForDistance(distance) {
   return DISTANCE_COLORS[Math.min(distance, DISTANCE_COLORS.length - 1)];
 }
 
+// Nodes shrink with each hop out from the searched word, so the graph reads
+// outward from a centre: the word you searched for is the largest thing on
+// screen and every ring beyond it is smaller. The floor keeps the outermost
+// ring legible and big enough to tap.
+//
+// The decay is deliberately gentle. At 0.76 a node lost almost half its size on
+// the very first hop (1.45 -> 0.76 of the tier size) and flattened onto the
+// floor by distance 3, so the default 0-5 range showed only three distinct
+// sizes and rings 3, 4 and 5 were identical. 0.88 gives every ring in that
+// range its own size and only reaches the floor at distance 6. Box heights for
+// the largest tier are now 50, 30, 27, 24, 21, 18 px out from the root, where
+// before they were 50, 26, 20, 17, 17, 17.
+const ROOT_BOOST = 1.45;
+const DISTANCE_DECAY = 0.88;
+const MIN_SCALE = 0.5;
+
+function scaleForDistance(distance) {
+  // No distance means the full-length view, where every word is equal.
+  if (distance === undefined) return 1;
+  if (distance === 0) return ROOT_BOOST;
+  return Math.max(MIN_SCALE, DISTANCE_DECAY ** distance);
+}
+
+// The single source of truth for type size, so a node's box is always measured
+// against the font it actually renders at.
+export function fontSizeFor(tier, distance) {
+  return tier.fontSize * scaleForDistance(distance);
+}
+
 // Explicit pixel dimensions per node, computed from its label rather than
 // relying on cytoscape's deprecated width/height: 'label' auto-sizing.
-export function nodeDimensions(word, tier, isRoot) {
-  if (tier.shape !== "round-rectangle") {
-    const size = isRoot ? tier.nodeSize * 1.7 : tier.nodeSize;
+//
+// The searched word always gets a rounded box, whatever the tier: it is the
+// one node that has to hold a large label, and a box does that far better than
+// a circle. Denser tiers keep circles for the outer words.
+export function nodeDimensions(word, tier, distance) {
+  const fontSize = fontSizeFor(tier, distance);
+  const isRoot = distance === 0;
+  if (!isRoot && tier.shape !== "round-rectangle") {
+    const size = tier.nodeSize * scaleForDistance(distance);
     return { w: size, h: size };
   }
-  const fontSize = isRoot ? tier.fontSize + 2 : tier.fontSize;
   const charWidth = fontSize * 0.62;
-  const w = Math.max(word.length * charWidth + 24, fontSize * 3);
+  const w = Math.max(word.length * charWidth + fontSize * 1.6, fontSize * 3);
   const h = fontSize * 2.3;
   return { w, h };
 }
@@ -121,7 +155,11 @@ export function buildStylesheet(tier) {
         "background-color": "#e63946",
         "border-width": 3,
         "border-color": "#7a1f27",
-        "font-size": Math.max(tier.fontSize, 13),
+        // Must match the font nodeDimensions() measured the box against, or the
+        // label overflows the box it was sized for.
+        "font-size": fontSizeFor(tier, 0),
+        // Always a box, even in the tiers that use circles for everything else.
+        shape: "round-rectangle",
         label: "data(label)",
         "text-outline-width": 2,
         "text-outline-color": "#ffffff",
