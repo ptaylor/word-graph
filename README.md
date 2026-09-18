@@ -79,10 +79,11 @@ neighborhood. The word's own length picks the graph, so there is no length to
 choose: `hotel` searches the 5-letter graph, `hotels` the 6-letter one.
 
 Once a graph is up, the **Within** slider sets how many changes away to include
-(1–8, default 5) and re-runs the search. Clicking a node lists the shortest path
-to it in the left-hand panel, and **All N-letter words** renders that whole
-length instead. The × in the search field — or **Escape** — clears back to the
-search screen.
+(1–8, default 5) and re-runs the search, and **Rings**/**Compact** switches how
+that subgraph is laid out — rings draw the change distance as literal distance
+from the searched word, compact packs the same words more tightly. Clicking a
+node lists the shortest path to it in the left-hand panel. The × in the search
+field — or **Escape** — clears back to the search screen.
 
 To produce a static production build instead:
 

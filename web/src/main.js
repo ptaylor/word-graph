@@ -2,15 +2,16 @@ import cytoscape from "cytoscape";
 import { loadManifest, loadLength, bfsDistances, bfsPath } from "./graph.js";
 import { tierFor, buildStylesheet, colorForDistance, nodeDimensions, fontSizeFor } from "./styling.js";
 
-const FULL_GRAPH_CONFIRM_THRESHOLD = 2000;
 const DEFAULT_MAX_DISTANCE = 5;
+// Above this many words the compact view drops the force layout for the grid:
+// see layoutOptionsFor().
+const COMPACT_FORCE_LIMIT = 250;
 
 const searchForm = document.getElementById("search-form");
 const wordInput = document.getElementById("word-input");
 const clearButton = document.getElementById("word-input-clear");
 const distanceMaxSlider = document.getElementById("distance-max");
 const distanceValue = document.getElementById("distance-value");
-const allWordsButton = document.getElementById("all-words-button");
 const pointed = document.getElementById("pointed");
 const status = document.getElementById("status");
 const legend = document.getElementById("legend");
@@ -18,11 +19,12 @@ const hoverWord = document.getElementById("hover-word");
 const hoverMeta = document.getElementById("hover-meta");
 const pathPanel = document.getElementById("path-panel");
 const pathList = document.getElementById("path-list");
+const layoutButtons = [...document.querySelectorAll(".layout-option")];
 
 let cy = null;
-let currentLength = null;
 let wordCountByLength = new Map();
 let currentExplore = null; // { data, startIndex } for the active search, used by path-on-click
+let layoutChoice = "rings";
 
 function setStatus(message, tone) {
   status.textContent = message;
@@ -195,6 +197,15 @@ function renderElements(elements, tier, layoutOptions, onSettled) {
   instance.resize();
 
   const padding = layoutOptions.padding ?? 40;
+  // Pin the zoom before laying out. Cytoscape's breadthfirst sizes its rings
+  // from the nodes' screen-space dimensions, so whatever zoom it finds leaks
+  // into the model-space geometry: the same 566-word search comes out 723 units
+  // wide at zoom 1, 1413 at zoom 0.5 and -- at the 0.05 clamp a hidden
+  // container used to leave behind -- 13,537, which was the real reason the
+  // graph once rendered as an invisible smear. With the view neutralised the
+  // geometry depends only on the graph, so toggling layouts no longer changes
+  // the ring spacing. The final zoom is set below, once the layout has settled.
+  instance.zoom(1);
   // The layout is told not to fit itself. An animated layout has not reached
   // its final positions when run() returns, so fitting then measures the
   // starting positions; and a fit on layoutstop fires in the same tick as
@@ -210,11 +221,60 @@ function renderElements(elements, tier, layoutOptions, onSettled) {
   instance.fit(undefined, padding); // stands in if layoutstop never arrives
 }
 
+// Two ways to read the same subgraph, offered side by side because neither wins
+// outright. Rings put the change distance on screen as literal distance from the
+// searched word, but a wide ring forces a wide circle. The compact view packs
+// tighter, at the cost of showing distance only through colour and size.
+function layoutOptionsFor(tier, nodeCount, rootId) {
+  const animate = nodeCount <= 300;
+  if (layoutChoice === "compact") {
+    // A force layout earns its cost on a small graph and is hopeless on a big
+    // one. cose is O(n^2) per iteration and computes the iterations in a tight
+    // loop, so a 566-word search blocks the main thread -- measured at 59s
+    // unanimated, and still 30s of jank with animate:true, which only spreads
+    // the same work across frames. Past this size the grid packs the same words
+    // (1953x793 units against cose's 1101) in under a millisecond.
+    if (nodeCount > COMPACT_FORCE_LIMIT) {
+      return { name: "grid", animate: false, fit: false, padding: 20 };
+    }
+    return {
+      name: "cose",
+      idealEdgeLength: 70 * tier.spacingFactor,
+      nodeRepulsion: 12000,
+      gravity: 50,
+      numIter: 500,
+      randomize: false,
+      animate,
+      animationDuration: 300,
+      padding: 40,
+    };
+  }
+  return {
+    name: "breadthfirst",
+    roots: `#${rootId}`,
+    circle: true,
+    avoidOverlap: true,
+    // Fixed, not the tier's spacingFactor: the tier values are tuned for the
+    // force layout's edge length, and rings want their own spread. Anything in
+    // this range is now stable, since renderElements() pins the zoom first.
+    spacingFactor: 0.9,
+    animate,
+    animationDuration: 300,
+    padding: 40,
+  };
+}
+
+function setLayoutChoice(choice) {
+  layoutChoice = choice;
+  for (const button of layoutButtons) {
+    const active = button.dataset.layout === choice;
+    button.classList.toggle("is-active", active);
+    button.setAttribute("aria-pressed", String(active));
+  }
+}
+
 async function ensureLengthLoaded(length) {
-  const data = await loadLength(length);
-  currentLength = length;
-  allWordsButton.textContent = `All ${length}-letter words`;
-  return data;
+  return loadLength(length);
 }
 
 async function explore() {
@@ -289,27 +349,12 @@ async function explore() {
   // Reveal the canvas before laying out: the layout measures the viewport.
   setView("graph");
   renderLegend(maxDistance);
-  // Force-directed. breadthfirst's circle mode was the original choice here
-  // because it "radiates from the queried word", but its radius grows far
-  // faster than the nodes do: it spread a 9-node result over 13,500 model
-  // units (nodes are ~40 units wide) and 566 nodes over 7,600, so fitting the
-  // result produced a zoom of 0.03-0.09 -- a smear of sub-pixel dots. cose
-  // packs the same graphs into 570 and 846 units respectively, i.e. a fit zoom
-  // of 0.65 in both cases. Measured over both sizes; grid scored similarly.
+  // Force-directed or rings, choose in the bar. Both are measured against the
+  // same word count, so the tier's own spread knob only applies to the former.
   renderElements(
     [...nodes, ...edges],
     tier,
-    {
-      name: "cose",
-      idealEdgeLength: 70 * tier.spacingFactor,
-      nodeRepulsion: 12000,
-      gravity: 50,
-      numIter: 500,
-      randomize: false,
-      animate: nodes.length <= 300,
-      animationDuration: 300,
-      padding: 40,
-    },
+    layoutOptionsFor(tier, nodes.length, startIndex),
     centreOnRoot
   );
   // The searched word starts selected, so the panel is populated the moment the
@@ -324,63 +369,6 @@ async function explore() {
   setStatus(`${nodes.length} words within ${maxDistance} change(s) of "${word}".`);
 }
 
-// Every word of the length already on screen. Reached from the graph view,
-// never from the landing screen -- the landing is for one word at a time.
-async function showAllWords() {
-  if (currentLength === null) return;
-  const length = currentLength;
-  setStatus(`Loading ${length}-letter graph\u2026`);
-  const data = await ensureLengthLoaded(length);
-
-  if (
-    data.words.length > FULL_GRAPH_CONFIRM_THRESHOLD &&
-    !window.confirm(
-      `This length has ${data.words.length} words. Rendering the full graph may be slow. Continue?`
-    )
-  ) {
-    setStatus("Cancelled.");
-    return;
-  }
-
-  currentExplore = null;
-  hidePathPanel();
-
-  const tier = tierFor(data.words.length);
-  const nodes = data.words.map((word, index) => ({
-    // No distance in the full-length view, so every word stays the same size.
-    data: { id: String(index), label: word, color: "#457b9d", fontSize: fontSizeFor(tier), ...nodeDimensions(word, tier) },
-  }));
-  const edges = [];
-  data.adjacency.forEach((neighbors, index) => {
-    for (const neighbor of neighbors) {
-      if (neighbor > index) {
-        edges.push({ data: { id: `${index}-${neighbor}`, source: String(index), target: String(neighbor) } });
-      }
-    }
-  });
-
-  const useCose = data.words.length <= FULL_GRAPH_CONFIRM_THRESHOLD;
-  // Same reason as explore(): reveal the canvas before the layout measures it.
-  setView("graph");
-  renderLegend(null);
-  renderElements(
-    [...nodes, ...edges],
-    tier,
-    useCose
-      ? {
-          name: "cose",
-          animate: false,
-          nodeRepulsion: 8000,
-          idealEdgeLength: 60,
-          avoidOverlap: true,
-          fit: true,
-          padding: 30,
-        }
-      : { name: "grid", fit: true, padding: 10, avoidOverlap: true }
-  );
-  setStatus(`Showing all ${data.words.length} words of length ${length} (${edges.length} edges).`);
-}
-
 function updateDistanceLabel() {
   distanceValue.textContent = distanceMaxSlider.value;
 }
@@ -390,6 +378,7 @@ async function init() {
   wordCountByLength = new Map(lengths.map(({ length, wordCount }) => [length, wordCount]));
 
   updateDistanceLabel();
+  setLayoutChoice(layoutChoice);
   // Nothing is fetched until a word is entered: the landing screen needs no
   // dictionary, so startup costs one small manifest request.
   setStatus("");
@@ -428,7 +417,16 @@ wordInput.addEventListener("keydown", (event) => {
   if (event.key === "Escape" && document.body.dataset.view === "graph") resetSearch();
 });
 
-allWordsButton.addEventListener("click", showAllWords);
+// Switching re-renders the search on screen, so the choice is visible without
+// re-typing the word. On the full-length view there is no distance to draw, so
+// the setting just waits for the next search.
+for (const button of layoutButtons) {
+  button.addEventListener("click", () => {
+    if (button.dataset.layout === layoutChoice) return;
+    setLayoutChoice(button.dataset.layout);
+    if (currentExplore) explore();
+  });
+}
 
 // Cytoscape measures its canvas once, at creation, and does not follow the
 // container itself. Without this the canvas keeps its original width when the

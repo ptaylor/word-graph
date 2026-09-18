@@ -180,25 +180,33 @@ Full specification: [`graph/README.md`](graph/README.md).
 - **Best Practices**:
   - Build the full node/edge element array first, then call `cy.add()` once
     — avoid adding elements one at a time, which triggers repeated re-layout.
-  - Pick the layout by graph size: `cose` (force-directed) for both a
-    BFS-rooted exploration and a smaller full-length graph, `grid` as a fast
-    fallback once node count gets large enough that force-directed layout
-    would be slow. **Do not use `breadthfirst`** — the intuitive "radiates from
-    the queried word" choice. Measured against a `hotel` search, it spaced
-    nodes ~20x further apart than they are wide, so the result had to be fitted
-    at a zoom of 0.03–0.09 (a smear of sub-pixel dots): 9 nodes spanned 13,537
-    units and 566 nodes 7,621, where `cose` fits the same two graphs into 569
-    and 846 units (fit zoom ~0.65 for both). Neither `circle`, `avoidOverlap`
-    nor `spacingFactor` fixes it.
+  - The app offers both searched-graph layouts in the bar — `Rings`
+    (`breadthfirst` with `circle: true`, which puts change distance on screen as
+    literal distance from the searched word) and `Compact` (`cose`, which packs
+    tighter but leaves distance to colour and size) — because neither wins
+    outright. See `layoutOptionsFor()` in `web/src/main.js`.
+  - **Pin the zoom before running a layout.** `breadthfirst` sizes its rings
+    from the nodes' *screen-space* dimensions, so whatever zoom it finds leaks
+    into the model-space geometry: the same 566-word search comes out 723 units
+    wide at zoom 1, 1413 at zoom 0.5 and 13,537 at the 0.05 floor that a hidden
+    container used to leave behind — which is what once made the graph render as
+    an invisible smear of sub-pixel dots. `renderElements()` sets `zoom(1)`
+    first, which makes the geometry a property of the graph rather than of the
+    previous view, so toggling layouts is now stable. (An earlier note in this
+    file blamed `spacingFactor` for that blow-up; it was the zoom leak.)
+  - `cose` is O(n²) per iteration and runs them in a tight loop: a 566-word
+    search blocked the main thread for 59s, and `animate: true` only spreads the
+    same work across frames (still ~30s, with worse packing). Cap it by node
+    count and fall back to `grid`, which packs the same words in under a
+    millisecond — see `COMPACT_FORCE_LIMIT`.
   - A layout only measures the viewport at the moment it runs, and cytoscape
     clamps to `minZoom` rather than complaining. So a layout run while the
     container is `display: none` (e.g. laying out before switching the app from
     its landing screen to the graph view) computes a zoom near zero, which the
-    clamp pins to the floor: the graph renders as an invisible dot with a pan of
-    ~0 and only repairs itself if something later resizes the window. Reveal the
-    canvas first, then lay out, and re-centre after anything that changes the
-    canvas width (here, the path panel appearing narrows it by 200px and drags
-    the root off centre by half of that).
+    clamp pins to the floor. Reveal the canvas first, then lay out, and
+    re-centre after anything that changes the canvas width (here, the path panel
+    appearing narrows it by 200px and drags the root off centre by half of
+    that).
   - Cytoscape's style parser doesn't support 4/8-digit hex colors
     (`#8888`) — use 3/6-digit hex or `rgba()`.
 - **Docs**: https://js.cytoscape.org/
