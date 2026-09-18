@@ -1,3 +1,5 @@
+<img src="web/public/favicon.svg" alt="Word Graph icon" width="64" height="64" align="right" />
+
 # word-graph
 
 Builds and visualizes a graph of words connected by a single letter change
