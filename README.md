@@ -1,4 +1,7 @@
-<img src="web/public/favicon.svg" alt="Word Graph icon" width="64" height="64" align="right" />
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="web/public/logo-inverse.svg" />
+  <img src="web/public/logo.svg" alt="Word Graph" width="72" height="72" align="right" />
+</picture>
 
 # word-graph
 
@@ -24,9 +27,10 @@ choices, and open design questions.
 - [`scripts/`](scripts/build-graph.mjs) — the Node.js build script that
   generates `graph/`, plus the `words-at-distance.mjs` CLI query.
 - [`web/`](web) — the Vite + Cytoscape.js visualization app that reads
-  `graph/*.json` and renders it in the browser.
-- [`icons/`](icons/README.md) — the project logo, as SVG: marks for light and
-  dark backgrounds plus a self-backgrounded app icon.
+  `graph/*.json` and renders it in the browser. The logo and favicon are
+  served from [`web/public/`](web/public).
+- [`branding/`](branding/README.md) — the marque: what it means, the geometry and
+  colour tokens that define it, and the explorations behind it.
 
 ## Building the graph
 
@@ -69,10 +73,16 @@ npm install   # first time only
 npm run dev
 ```
 
-Then open the printed local URL (e.g. http://localhost:5173). Pick a word
-length, type a word, choose a max distance, and hit **Explore** to see that
-word's neighborhood — or use **Show full graph** to render every word of the
-selected length at once.
+Then open the printed local URL (e.g. http://localhost:5173). The app opens on
+a search screen — type any word and press **Enter** to see that word's
+neighborhood. The word's own length picks the graph, so there is no length to
+choose: `hotel` searches the 5-letter graph, `hotels` the 6-letter one.
+
+Once a graph is up, the **Within** control narrows the search to a band of
+change distances (0–2 by default), clicking a node lists the shortest path to it
+in the left-hand panel, and **All N-letter words** renders that whole length
+instead. The × in the search field — or **Escape** — clears back to the search
+screen.
 
 To produce a static production build instead:
 

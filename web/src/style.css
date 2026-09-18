@@ -1,6 +1,16 @@
 :root {
-  color-scheme: light dark;
+  /* The chrome is a light UI throughout, so pin the scheme. Left as
+     "light dark", the browser painted dark form widgets into a white bar on
+     any machine with a dark OS preference -- white labels on #f1f5f9 buttons,
+     i.e. invisible. A real dark theme is a separate job. */
+  color-scheme: light;
   font-family: system-ui, sans-serif;
+  --ink: #0f172a;
+  --ink-muted: #64748b;
+  --line: #e2e8f0;
+  --field-line: #cbd5e1;
+  --accent: #457b9d;
+  --danger: #b91c1c;
 }
 
 body {
@@ -9,56 +19,203 @@ body {
   display: flex;
   flex-direction: column;
   background: #f8fafc;
+  color: var(--ink);
 }
 
-#controls {
+/* The landing is a blank page: no tint, no chrome, no dividers -- just the
+   mark, the name and the search field centred on it. The graph view keeps the
+   tinted backdrop, which it barely shows behind its own panels. */
+body[data-view="landing"] {
+  background: #ffffff;
+}
+
+/* ------------------------------------------------------------------ topbar --
+   In "landing" the bar is the whole screen and centres itself: mark, name,
+   search. In "graph" it collapses to a bar above the canvas. Only the layout
+   differs -- the elements are the same, which is what keeps the two states
+   from drifting apart. */
+
+#topbar {
   display: flex;
   align-items: center;
   gap: 1rem;
   padding: 0.6rem 1.25rem;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--line);
   background: #ffffff;
   flex-wrap: wrap;
 }
 
-#controls label {
-  display: flex;
+body[data-view="landing"] #topbar {
+  margin: auto;
   flex-direction: column;
-  font-size: 0.75rem;
-  color: #475569;
-  gap: 0.2rem;
+  align-items: center;
+  gap: 1.75rem;
+  width: 100%;
+  max-width: 32rem;
+  padding: 2rem;
+  box-sizing: border-box;
+  border-bottom: none;
+  background: transparent;
 }
 
-#controls input,
-#controls select {
+body[data-view="landing"] #layout,
+body[data-view="landing"] #view-controls {
+  display: none;
+}
+
+/* ------------------------------------------------------------------- brand -- */
+
+#brand {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-width: 0;
+}
+
+body[data-view="landing"] #brand {
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+#brand-mark {
+  display: block;
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+}
+
+body[data-view="landing"] #brand-mark {
+  width: 84px;
+  height: 84px;
+}
+
+#hover-word {
+  font-size: 1.4rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: #1d3557;
+  transition: color 0.15s ease;
+  white-space: nowrap;
+}
+
+body[data-view="landing"] #hover-word {
+  font-size: 2.1rem;
+  letter-spacing: -0.03em;
+}
+
+#hover-meta {
+  font-size: 0.85rem;
+  color: var(--ink-muted);
+  white-space: nowrap;
+}
+
+/* ------------------------------------------------------------------ search -- */
+
+#search-form {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  width: 17rem;
+  max-width: 100%;
+  padding: 0.3rem 0.3rem 0.3rem 0.85rem;
+  background: #ffffff;
+  border: 1px solid var(--field-line);
+  border-radius: 10px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+body[data-view="landing"] #search-form {
+  width: 100%;
+  padding: 0.8rem 1.15rem;
+  border-radius: 12px;
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.06);
+}
+
+#search-form:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(69, 123, 157, 0.18);
+}
+
+#word-input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  font: inherit;
   font-size: 0.95rem;
-  padding: 0.35rem 0.5rem;
-  border: 1px solid #cbd5e1;
-  border-radius: 6px;
+  color: var(--ink);
 }
 
-#controls button {
-  font-size: 0.9rem;
-  padding: 0.45rem 0.9rem;
-  border: 1px solid #cbd5e1;
+body[data-view="landing"] #word-input {
+  font-size: 1.1rem;
+}
+
+#word-input::placeholder {
+  color: #94a3b8;
+}
+
+#word-input-clear {
+  border: none;
+  background: transparent;
+  color: var(--ink-muted);
+  font-size: 1.15rem;
+  line-height: 1;
+  padding: 0.15rem 0.4rem;
   border-radius: 6px;
-  background: #f1f5f9;
   cursor: pointer;
 }
 
-#controls button:hover {
-  background: #e2e8f0;
+#word-input-clear:hover {
+  background: #f1f5f9;
+  color: var(--ink);
 }
 
-.slider-field {
-  min-width: 11rem;
+/* No submit button: Enter in the field is the whole interaction, so the field
+   itself has to read as the control. */
+
+/* -------------------------------------------------------- distance control --
+   Secondary to the search, and only present once there is a graph to scope. */
+
+#view-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.8rem;
+  color: var(--ink-muted);
 }
 
-.slider-field input[type="range"] {
-  padding: 0;
-  border: none;
-  width: 100%;
-  accent-color: #457b9d;
+#view-controls input[type="range"] {
+  accent-color: var(--accent);
+}
+
+#view-controls .dual-range {
+  width: 7rem;
+}
+
+#distance-value {
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+  font-weight: 600;
+  min-width: 2.2rem;
+}
+
+#all-words-button {
+  font: inherit;
+  font-size: 0.78rem;
+  padding: 0.3rem 0.7rem;
+  margin-left: 0.25rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink-muted);
+  cursor: pointer;
+}
+
+#all-words-button:hover {
+  border-color: var(--field-line);
+  background: #f1f5f9;
+  color: var(--ink);
 }
 
 /* Two overlapping range inputs sharing one track, each thumb independently
@@ -89,8 +246,23 @@ body {
 
 #status {
   font-size: 0.85rem;
-  color: #64748b;
+  color: var(--ink-muted);
   margin-left: auto;
+}
+
+/* Nothing to report, take no space. */
+#status:empty {
+  display: none;
+}
+
+body[data-view="landing"] #status {
+  margin: 0;
+  text-align: center;
+}
+
+#status.is-error {
+  color: var(--danger);
+  font-weight: 500;
 }
 
 #layout {
@@ -198,24 +370,8 @@ body {
   display: inline-block;
 }
 
-/* Embedded in the header (not a floating overlay): shows the hovered word
-   in place, reverting to the app title when nothing is hovered. */
-#title-pane {
-  display: flex;
-  align-items: baseline;
-  gap: 0.6rem;
-  min-width: 10rem;
-}
-
-#hover-word {
-  font-size: 1.4rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  color: #1d3557;
-  transition: color 0.15s ease;
-}
-
-#hover-meta {
-  font-size: 0.85rem;
-  color: #64748b;
+/* An empty element is still a flex item, so the parent's gap would leave dead
+   space after the name until something is hovered. */
+#hover-meta:empty {
+  display: none;
 }

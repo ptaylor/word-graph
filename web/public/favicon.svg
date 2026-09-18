@@ -1,12 +1,19 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
-  <!-- Word Graph icon: a small word-ladder chain, root node in red, each
-       hop shifting toward blue, tracing the app's own distance-color ramp. -->
-  <line x1="32" y1="30" x2="14" y2="50" stroke="#94a3b8" stroke-width="3" stroke-linecap="round" />
-  <line x1="32" y1="30" x2="50" y2="46" stroke="#94a3b8" stroke-width="3" stroke-linecap="round" />
-  <line x1="32" y1="30" x2="46" y2="12" stroke="#94a3b8" stroke-width="3" stroke-linecap="round" />
-
-  <circle cx="46" cy="12" r="7" fill="#457b9d" stroke="#ffffff" stroke-width="2" />
-  <circle cx="50" cy="46" r="7" fill="#f4a261" stroke="#ffffff" stroke-width="2" />
-  <circle cx="14" cy="50" r="7" fill="#2a9d8f" stroke="#ffffff" stroke-width="2" />
-  <circle cx="32" cy="30" r="9" fill="#e63946" stroke="#ffffff" stroke-width="2.5" />
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="Word Graph">
+  <title>Word Graph</title>
+  <defs>
+    <linearGradient id="wgtile" x1="0" y1="0" x2="0.3" y2="1">
+      <stop offset="0" stop-color="#2b4c7a" />
+      <stop offset="1" stop-color="#16233b" />
+    </linearGradient>
+  </defs>
+  <!-- Theme-proof form for a tab icon or installed app: the tile supplies its own
+       background, so the same file works on light and dark UI. -->
+  <rect width="64" height="64" rx="16" fill="url(#wgtile)" />
+  <g transform="translate(32 32) scale(0.77) translate(-36 -36)">
+    <path d="M11 20 L23 52 L36 20 L49 52 L61 20" fill="none" stroke="#ffffff" stroke-width="15" stroke-linecap="round" stroke-linejoin="round" />
+    <path d="M17 36 L23 52 L36 20 L45.4 43" fill="none" stroke="#2b4c7a" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" />
+    <circle cx="17" cy="36" r="6.5" fill="#e63946" />
+    <circle cx="36" cy="20" r="6.5" fill="#f4a261" />
+    <circle cx="45.4" cy="43" r="6.5" fill="#8ab17d" />
+  </g>
 </svg>

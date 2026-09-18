@@ -3,17 +3,15 @@ import { loadManifest, loadLength, bfsDistances, bfsPath } from "./graph.js";
 import { tierFor, buildStylesheet, colorForDistance, nodeDimensions } from "./styling.js";
 
 const FULL_GRAPH_CONFIRM_THRESHOLD = 2000;
-const DATALIST_POPULATE_THRESHOLD = 3000;
+const DEFAULT_MAX_DISTANCE = 2;
 
-const lengthSlider = document.getElementById("length-slider");
-const lengthValue = document.getElementById("length-value");
+const searchForm = document.getElementById("search-form");
 const wordInput = document.getElementById("word-input");
-const wordOptions = document.getElementById("word-options");
+const clearButton = document.getElementById("word-input-clear");
 const distanceMinSlider = document.getElementById("distance-min");
 const distanceMaxSlider = document.getElementById("distance-max");
 const distanceValue = document.getElementById("distance-value");
-const exploreButton = document.getElementById("explore-button");
-const fullGraphButton = document.getElementById("full-graph-button");
+const allWordsButton = document.getElementById("all-words-button");
 const status = document.getElementById("status");
 const legend = document.getElementById("legend");
 const hoverWord = document.getElementById("hover-word");
@@ -27,8 +25,23 @@ let currentLength = null;
 let wordCountByLength = new Map();
 let currentExplore = null; // { data, startIndex } for the active search, used by path-on-click
 
-function setStatus(message) {
+function setStatus(message, tone) {
   status.textContent = message;
+  status.classList.toggle("is-error", tone === "error");
+}
+
+// The app is two states. "landing" is the mark, the name and the search field
+// and nothing else; "graph" adds the canvas and the distance control. Both
+// share one header, so there is nothing to keep in sync between them.
+function setView(view) {
+  document.body.dataset.view = view;
+  clearButton.hidden = view !== "graph";
+  if (view === "landing") {
+    if (cy) cy.elements().remove();
+    hidePathPanel();
+    currentExplore = null;
+    resetHoverTitle();
+  }
 }
 
 function debounce(fn, delayMs) {
@@ -149,20 +162,9 @@ function renderElements(elements, tier, layout) {
 }
 
 async function ensureLengthLoaded(length) {
-  if (currentLength === length) return loadLength(length);
   const data = await loadLength(length);
   currentLength = length;
-
-  wordOptions.innerHTML = "";
-  if (data.words.length <= DATALIST_POPULATE_THRESHOLD) {
-    const fragment = document.createDocumentFragment();
-    for (const word of data.words) {
-      const option = document.createElement("option");
-      option.value = word;
-      fragment.appendChild(option);
-    }
-    wordOptions.appendChild(fragment);
-  }
+  allWordsButton.textContent = `All ${length}-letter words`;
   return data;
 }
 
@@ -172,29 +174,25 @@ async function explore() {
   const maxDistance = Number(distanceMaxSlider.value);
 
   if (!word) {
-    setStatus("Enter a word to explore.");
+    setStatus("Type a word to explore.", "error");
     return;
   }
 
   hidePathPanel();
 
-  // The word's own length determines which per-length graph to search --
-  // sync the slider to match rather than trusting whatever it was set to.
+  // The word's own length picks which per-length graph to search. There is no
+  // length control to keep in step -- the word is the only input that matters.
   const length = word.length;
   if (!wordCountByLength.has(length)) {
-    setStatus(`No ${length}-letter dictionary available.`);
+    setStatus(`No ${length}-letter words in this dictionary.`, "error");
     return;
   }
-  if (Number(lengthSlider.value) !== length) {
-    lengthSlider.value = String(length);
-    updateLengthLabel(length);
-  }
 
-  setStatus(`Loading ${length}-letter graph...`);
+  setStatus(`Loading ${length}-letter graph\u2026`);
   const data = await ensureLengthLoaded(length);
   const startIndex = data.wordIndex.get(word);
   if (startIndex === undefined) {
-    setStatus(`"${word}" is not in the ${length}-letter dictionary.`);
+    setStatus(`"${word}" is not in the ${length}-letter dictionary.`, "error");
     return;
   }
 
@@ -229,7 +227,8 @@ async function explore() {
     currentExplore = null;
     renderElements([], tier, { name: "grid" });
     renderLegend(minDistance, maxDistance);
-    setStatus(`No words ${minDistance}\u2013${maxDistance} change(s) from "${word}".`);
+    setView("graph");
+    setStatus(`No words ${minDistance}\u2013${maxDistance} change(s) from "${word}".`, "error");
     return;
   }
 
@@ -249,13 +248,17 @@ async function explore() {
     padding: 40,
   });
   renderLegend(minDistance, maxDistance);
-  const range = minDistance === maxDistance ? `${maxDistance}` : `${minDistance}–${maxDistance}`;
+  setView("graph");
+  const range = minDistance === maxDistance ? `${maxDistance}` : `${minDistance}\u2013${maxDistance}`;
   setStatus(`${nodes.length} words ${range} change(s) from "${word}".`);
 }
 
-async function showFullGraph() {
-  const length = Number(lengthSlider.value);
-  setStatus(`Loading ${length}-letter graph...`);
+// Every word of the length already on screen. Reached from the graph view,
+// never from the landing screen -- the landing is for one word at a time.
+async function showAllWords() {
+  if (currentLength === null) return;
+  const length = currentLength;
+  setStatus(`Loading ${length}-letter graph\u2026`);
   const data = await ensureLengthLoaded(length);
 
   if (
@@ -301,12 +304,8 @@ async function showFullGraph() {
       : { name: "grid", fit: true, padding: 10, avoidOverlap: true }
   );
   renderLegend(null, null);
+  setView("graph");
   setStatus(`Showing all ${data.words.length} words of length ${length} (${edges.length} edges).`);
-}
-
-function updateLengthLabel(length) {
-  const wordCount = wordCountByLength.get(length);
-  lengthValue.textContent = wordCount === undefined ? `${length} letters` : `${length} letters (${wordCount})`;
 }
 
 function updateDistanceLabel() {
@@ -316,34 +315,14 @@ function updateDistanceLabel() {
 }
 
 async function init() {
-  setStatus("Loading manifest...");
   const lengths = await loadManifest();
   wordCountByLength = new Map(lengths.map(({ length, wordCount }) => [length, wordCount]));
 
-  const minLength = lengths[0].length;
-  const maxLength = lengths[lengths.length - 1].length;
-  lengthSlider.min = String(minLength);
-  lengthSlider.max = String(maxLength);
-
-  const defaultLength = lengths.find((l) => l.length === 5) ?? lengths[0];
-  lengthSlider.value = String(defaultLength.length);
-  updateLengthLabel(defaultLength.length);
   updateDistanceLabel();
-  await ensureLengthLoaded(defaultLength.length);
-  setStatus("Ready.");
-}
-
-function handleLengthSliderChange() {
-  const length = Number(lengthSlider.value);
-  updateLengthLabel(length);
-  const word = wordInput.value.trim().toLowerCase();
-  if (word && word.length === length) {
-    explore();
-  } else {
-    ensureLengthLoaded(length).then(() =>
-      setStatus(`Loaded ${length}-letter dictionary (${wordCountByLength.get(length)} words). Enter a word or show the full graph.`)
-    );
-  }
+  // Nothing is fetched until a word is entered: the landing screen needs no
+  // dictionary, so startup costs one small manifest request.
+  setStatus("");
+  wordInput.focus();
 }
 
 function handleDistanceSliderChange() {
@@ -351,24 +330,39 @@ function handleDistanceSliderChange() {
     distanceMinSlider.value = distanceMaxSlider.value;
   }
   updateDistanceLabel();
-  if (wordInput.value.trim()) explore();
+  // Only meaningful when a graph is on screen; on the landing it would fire a
+  // search for whatever happened to be in the field.
+  if (document.body.dataset.view === "graph" && wordInput.value.trim()) explore();
 }
 
-const debouncedLengthChange = debounce(handleLengthSliderChange, 200);
+function resetSearch() {
+  wordInput.value = "";
+  distanceMinSlider.value = "0";
+  distanceMaxSlider.value = String(DEFAULT_MAX_DISTANCE);
+  updateDistanceLabel();
+  setView("landing");
+  setStatus("");
+  wordInput.focus();
+}
+
 const debouncedDistanceChange = debounce(handleDistanceSliderChange, 200);
 
-exploreButton.addEventListener("click", explore);
-fullGraphButton.addEventListener("click", showFullGraph);
+// Searching is explicit. The previous build re-ran the BFS and rebuilt every
+// element on a 300ms typing debounce, so spelling "hotel" meant five full
+// rebuilds fighting the keyboard.
+searchForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  explore();
+});
+
+clearButton.addEventListener("click", resetSearch);
+
 wordInput.addEventListener("keydown", (event) => {
-  if (event.key === "Enter") explore();
+  if (event.key === "Escape" && document.body.dataset.view === "graph") resetSearch();
 });
-wordInput.addEventListener("input", debounce(() => {
-  if (wordInput.value.trim()) explore();
-}, 300));
-lengthSlider.addEventListener("input", () => {
-  updateLengthLabel(Number(lengthSlider.value));
-  debouncedLengthChange();
-});
+
+allWordsButton.addEventListener("click", showAllWords);
+
 for (const slider of [distanceMinSlider, distanceMaxSlider]) {
   slider.addEventListener("input", () => {
     updateDistanceLabel();
@@ -378,5 +372,5 @@ for (const slider of [distanceMinSlider, distanceMaxSlider]) {
 
 init().catch((err) => {
   console.error(err);
-  setStatus(`Error: ${err.message}`);
+  setStatus(`Error: ${err.message}`, "error");
 });

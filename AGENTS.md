@@ -219,12 +219,12 @@ Full specification: [`graph/README.md`](graph/README.md).
 - `web/` — Vite + Cytoscape.js visualization app. Explore/search/pan-zoom the
   graph and run BFS distance queries. `web/public/graph` is a symlink to the
   top-level `graph/` directory.
-- `icons/` — shipped logo assets: a bold `W` with a routed graph drawn inside it,
-  as hand-authored SVG (light ink, dark ink, and a self-backgrounded app icon).
-  See [`icons/README.md`](icons/README.md) for the geometry, colour tokens, and the
-  constraints that govern editing them.
-- `branding/` — logo design explorations and preview sheets. Working material that
-  led to `icons/`, not shipped assets.
+- `web/public/` — static assets served at the site root: the logo marks
+  (`logo.svg` for light UI, `logo-inverse.svg` for dark) and `favicon.svg` /
+  `favicon.ico`. See [`branding/README.md`](branding/README.md) for the geometry,
+  colour tokens, and the constraints that govern editing them.
+- `branding/` — the marque's design documentation, plus the explorations (word
+  tiles, node-path W, hub, ladder, chain) that led to it.
 
 _To be kept up to date as the project structure grows further._
 

@@ -4,35 +4,65 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Word Graph</title>
+    <link rel="icon" href="/favicon.ico" sizes="32x32" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="stylesheet" href="/src/style.css" />
   </head>
-  <body>
-    <header id="controls">
-      <div id="title-pane">
-        <span id="hover-word">Word Graph</span>
+  <body data-view="landing">
+    <!-- One header serves both states. On "landing" it is the entire screen;
+         on "graph" it collapses to a bar above the canvas. Same DOM, so there
+         is no second search field to keep in sync. -->
+    <header id="topbar">
+      <div id="brand">
+        <img id="brand-mark" src="/logo.svg" alt="" width="84" height="84" />
+        <span id="hover-word">word graph</span>
         <span id="hover-meta"></span>
       </div>
-      <label class="slider-field">
-        Word length: <span id="length-value"></span>
-        <input id="length-slider" type="range" min="1" max="23" value="5" step="1" />
-      </label>
-      <label>
-        Word
-        <input id="word-input" list="word-options" autocomplete="off" placeholder="e.g. cat" />
-        <datalist id="word-options"></datalist>
-      </label>
-      <label class="slider-field">
-        Distance: <span id="distance-value"></span>
+
+      <form id="search-form" role="search" autocomplete="off">
+        <input
+          id="word-input"
+          name="word"
+          type="text"
+          placeholder="Type a word…"
+          aria-label="Word to explore"
+          enterkeyhint="search"
+          autocapitalize="none"
+          autocorrect="off"
+          spellcheck="false"
+        />
+        <button id="word-input-clear" type="button" aria-label="Clear and start again" hidden>×</button>
+      </form>
+
+      <div id="view-controls">
+        <label for="distance-min">Within</label>
         <span class="dual-range">
-          <input id="distance-min" type="range" min="0" max="8" value="0" step="1" />
-          <input id="distance-max" type="range" min="0" max="8" value="2" step="1" />
+          <input
+            id="distance-min"
+            type="range"
+            min="0"
+            max="8"
+            value="0"
+            step="1"
+            aria-label="Minimum changes away"
+          />
+          <input
+            id="distance-max"
+            type="range"
+            min="0"
+            max="8"
+            value="2"
+            step="1"
+            aria-label="Maximum changes away"
+          />
         </span>
-      </label>
-      <button id="explore-button">Explore</button>
-      <button id="full-graph-button">Show full graph</button>
-      <span id="status"></span>
+        <span id="distance-value"></span>
+        <button id="all-words-button" type="button"></button>
+      </div>
+
+      <p id="status"></p>
     </header>
+
     <div id="layout">
       <aside id="path-panel" hidden>
         <h2>Path</h2>
@@ -42,6 +72,7 @@
         <div id="legend" hidden></div>
       </main>
     </div>
+
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>
