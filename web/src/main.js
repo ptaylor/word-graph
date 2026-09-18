@@ -172,24 +172,34 @@ function hidePathPanel() {
   if (cy) cy.elements(".path-node, .path-edge").removeClass("path-node path-edge");
 }
 
-// One entry per change out from the searched word, plus the word itself.
-function renderLegend(maxDistance) {
+// The ring counts, not a colour key. Colour is already the third encoding of
+// distance -- after ring radius and node size -- so a legend that only restated
+// it earned nothing. What is on screen nowhere else is the *shape* of the
+// result: that 145 of a "hotel" search's 181 words sit in the outermost ring.
+// Each item is the words a ring adds, which is why they are prefixed "+".
+function renderLegend(ringCounts) {
   legend.innerHTML = "";
-  if (maxDistance === null) {
+  if (ringCounts === null) {
     legend.hidden = true;
     return;
   }
   legend.hidden = false;
-  const addItem = (color, text) => {
+  const addItem = (color, text, title) => {
     const item = document.createElement("span");
     item.className = "legend-item";
+    item.title = title;
     item.innerHTML = `<span class="legend-swatch" style="background:${color}"></span>${text}`;
     legend.appendChild(item);
   };
-  addItem(colorForDistance(0), "root");
-  for (let distance = 1; distance <= maxDistance; distance++) {
-    addItem(colorForDistance(distance), `${distance} change${distance > 1 ? "s" : ""}`);
-  }
+  ringCounts.forEach((count, distance) => {
+    addItem(
+      colorForDistance(distance),
+      distance === 0 ? "root" : `+${count}`,
+      distance === 0
+        ? "the searched word"
+        : `${distance} change${distance === 1 ? "" : "s"} away \u2014 ${count} word${count === 1 ? "" : "s"}`
+    );
+  });
 }
 
 function renderElements(elements, tier, layoutOptions, onSettled) {
@@ -316,7 +326,6 @@ async function ensureLengthLoaded(length) {
 
 async function explore() {
   const word = wordInput.value.trim().toLowerCase();
-  const maxDistance = Number(distanceMaxSlider.value);
 
   if (!word) {
     setStatus("Type a word to explore.", "error");
@@ -344,8 +353,26 @@ async function explore() {
     return;
   }
 
-  // Everything out to the maximum, with the searched word always included.
-  const distances = bfsDistances(data.adjacency, startIndex, maxDistance);
+  // One uncapped BFS. The searched set is then a filter of it, and the largest
+  // distance it produced is how far this word can be walked at all -- which is
+  // what the slider's right end should mean. It is a property of the word, so
+  // walking to another one (double-click) can widen or narrow the range.
+  const all = bfsDistances(data.adjacency, startIndex, Infinity);
+  let reach = 0;
+  for (const distance of all.values()) if (distance > reach) reach = distance;
+  const requested = Number(distanceMaxSlider.value);
+  updateDistanceRange(reach);
+  // Assigning a smaller max clamps the slider, so read it back: the status, the
+  // legend and the filter all have to agree with what the control shows. The set
+  // is unchanged by that -- beyond a word's reach there is nothing to add.
+  const maxDistance = Math.min(requested, Number(distanceMaxSlider.value));
+  const distances = new Map();
+  for (const [index, distance] of all) if (distance <= maxDistance) distances.set(index, distance);
+  // How many words each ring contributes. The distances are contiguous from 0,
+  // so this has no holes to guard against.
+  const ringCounts = [];
+  for (const distance of distances.values()) ringCounts[distance] = (ringCounts[distance] ?? 0) + 1;
+
   const tier = tierFor(distances.size);
   const nodes = [...distances.entries()].map(([index, distance]) => {
     const isRoot = index === startIndex;
@@ -392,7 +419,7 @@ async function explore() {
   currentExplore = { data, startIndex };
   // Reveal the canvas before laying out: the layout measures the viewport.
   setView("graph");
-  renderLegend(maxDistance);
+  renderLegend(ringCounts);
   // The force layout works in a tight loop, so on a big search it blocks the
   // main thread for seconds. Paint the hint and let the browser actually draw
   // it first, or the freeze reads as a hang.
@@ -422,6 +449,19 @@ async function explore() {
 
 function updateDistanceLabel() {
   distanceValue.textContent = distanceMaxSlider.value;
+}
+
+// The slider's right end is "everything reachable from this word" rather than a
+// fixed 8, which was arbitrary -- the graph is 26 deep at five letters and 51 at
+// seven, while plenty of words cannot be walked anywhere near that far. The
+// floor keeps the control usable for the words that are isolated outright (57%
+// of eight-letter words have no same-length neighbour at all), where the honest
+// answer would otherwise be a dead slider from 0 to 0.
+function updateDistanceRange(reach) {
+  const next = Math.max(reach, DEFAULT_MAX_DISTANCE);
+  if (Number(distanceMaxSlider.max) === next) return;
+  distanceMaxSlider.max = String(next);
+  updateDistanceLabel();
 }
 
 async function init() {
