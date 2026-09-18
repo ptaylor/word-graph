@@ -1,6 +1,6 @@
 import cytoscape from "cytoscape";
 import { loadManifest, loadLength, bfsDistances, bfsPath } from "./graph.js";
-import { tierFor, buildStylesheet, colorForDistance, nodeDimensions } from "./styling.js";
+import { tierFor, buildStylesheet, colorForDistance, nodeDimensions, fontSizeFor } from "./styling.js";
 
 const FULL_GRAPH_CONFIRM_THRESHOLD = 2000;
 const DEFAULT_MAX_DISTANCE = 5;
@@ -257,7 +257,10 @@ async function explore() {
         color: colorForDistance(distance),
         distance,
         // Sized by distance: the searched word is the biggest box on screen and
-        // each ring outward is smaller.
+        // each ring outward is smaller. The font travels with the scale, since
+        // the box was measured from it -- a fixed font in a shrinking box just
+        // pads the node out and lets the label spill over the edges.
+        fontSize: fontSizeFor(tier, distance),
         ...nodeDimensions(label, tier, distance),
       },
       classes: isRoot ? "root" : undefined,
@@ -345,7 +348,7 @@ async function showAllWords() {
   const tier = tierFor(data.words.length);
   const nodes = data.words.map((word, index) => ({
     // No distance in the full-length view, so every word stays the same size.
-    data: { id: String(index), label: word, color: "#457b9d", ...nodeDimensions(word, tier) },
+    data: { id: String(index), label: word, color: "#457b9d", fontSize: fontSizeFor(tier), ...nodeDimensions(word, tier) },
   }));
   const edges = [];
   data.adjacency.forEach((neighbors, index) => {

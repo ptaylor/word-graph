@@ -76,16 +76,21 @@ export function colorForDistance(distance) {
 // floor by distance 3, so the default 0-5 range showed only three distinct
 // sizes and rings 3, 4 and 5 were identical. 0.88 gives every ring in that
 // range its own size and only reaches the floor at distance 6. Box heights for
-// the largest tier are now 50, 30, 27, 24, 21, 18 px out from the root, where
+// the largest tier are 50, 30, 27, 24, 21, 18 px out from the root, where
 // before they were 50, 26, 20, 17, 17, 17.
-const ROOT_BOOST = 1.45;
+//
+// The first two rings are set explicitly rather than by the decay, because they
+// are the ones a search actually gets read off: the words one and two changes
+// away are the answer, and the pure curve left them only marginally larger than
+// ring 3. Rings 3 and beyond still follow the decay, untouched.
+const RING_SCALES = [1.45, 1.0, 0.9]; // root, 1 change, 2 changes
 const DISTANCE_DECAY = 0.88;
 const MIN_SCALE = 0.5;
 
 function scaleForDistance(distance) {
   // No distance means the full-length view, where every word is equal.
   if (distance === undefined) return 1;
-  if (distance === 0) return ROOT_BOOST;
+  if (distance < RING_SCALES.length) return RING_SCALES[distance];
   return Math.max(MIN_SCALE, DISTANCE_DECAY ** distance);
 }
 
@@ -122,7 +127,9 @@ export function buildStylesheet(tier) {
       style: {
         label: tier.labelAlways ? "data(label)" : "",
         "font-family": "system-ui, sans-serif",
-        "font-size": tier.fontSize,
+        // Per node, not per tier: the box was measured against this font, so
+        // both have to come from the same scale or the label overflows.
+        "font-size": "data(fontSize)",
         "font-weight": 600,
         color: "#1d3557",
         "text-valign": "center",
@@ -144,6 +151,10 @@ export function buildStylesheet(tier) {
       selector: "node.show-label",
       style: {
         label: "data(label)",
+        // Tier font, not the ring-scaled one: in the dense tiers this is the
+        // only way to read a word, and a label sized to an 8px node would be
+        // illegible. It spills outside the node, which reads as a tooltip.
+        ...(tier.labelAlways ? {} : { "font-size": tier.fontSize }),
         "text-outline-width": 2,
         "text-outline-color": "#ffffff",
         "z-index": 5,
