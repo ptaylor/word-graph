@@ -82,8 +82,9 @@ Once a graph is up, the **Within** slider sets how many changes away to include
 (0–8, default 4) and re-runs the search, and **Rings**/**Organic** switches how
 that subgraph is laid out — rings draw the change distance as literal distance
 from the searched word, organic packs the same words more tightly. Clicking a
-node lists the shortest path to it in the left-hand panel. The × in the search
-field — or **Escape** — clears back to the search screen.
+node lists the shortest path to it in the left-hand panel; double-clicking it
+makes that word the searched word, rebuilding the graph around it. The × in the
+search field — or **Escape** — clears back to the search screen.
 
 To produce a static production build instead:
 

@@ -71,6 +71,13 @@ function getCy() {
       resetHoverTitle();
     });
     cy.on("tap", "node", (event) => showPath(Number(event.target.id())));
+    // Double-click to walk to a word: it becomes the searched word, so the whole
+    // graph is rebuilt and centred on it. A single click still just lists the
+    // path to it, which is what makes the second click meaningful.
+    cy.on("dbltap", "node", (event) => {
+      wordInput.value = event.target.data("label");
+      explore();
+    });
   }
   return cy;
 }
@@ -317,6 +324,9 @@ async function explore() {
   }
 
   hidePathPanel();
+  // The nodes about to be replaced will never fire a mouseout, so the bar's
+  // "pointed at" word would otherwise keep naming a node that no longer exists.
+  resetHoverTitle();
 
   // The word's own length picks which per-length graph to search. There is no
   // length control to keep in step -- the word is the only input that matters.

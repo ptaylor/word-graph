@@ -276,8 +276,12 @@ Full specification: [`graph/README.md`](graph/README.md).
 - `scripts/` — Node.js build scripts: `build-graph.mjs` (generates `graph/`)
   and `words-at-distance.mjs` (CLI query over a generated graph).
 - `web/` — Vite + Cytoscape.js visualization app. Explore/search/pan-zoom the
-  graph and run BFS distance queries. `web/public/graph` is a symlink to the
-  top-level `graph/` directory.
+  graph and run BFS distance queries: click a word to list the path to it,
+  double-click it to re-root the search on that word. `web/public/graph` is a
+  symlink to the top-level `graph/` directory. [`web/swatch.html`](web/swatch.html)
+  is a standalone measurement sheet (palette and type options, with a
+  deuteranopia simulation) — a working document, not part of the app, and not
+  built into it.
 - `web/public/` — static assets served at the site root: the logo marks
   (`logo.svg` for light UI, `logo-inverse.svg` for dark) and `favicon.svg` /
   `favicon.ico`. See [`branding/README.md`](branding/README.md) for the geometry,
