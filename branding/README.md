@@ -87,13 +87,20 @@ spending the mark's legibility to buy emphasis that only lands above ~200 px.
 | Routed edge on a navy letter | `#9db0c6` | |
 | Routed edge on a white letter | `#2b4c7a` | |
 | Favicon tile | `#2b4c7a` → `#16233b` gradient | |
-| Node · root | `#e63946` | `DISTANCE_COLORS[0]` |
-| Node · next | `#f4a261` | `DISTANCE_COLORS[1]` |
-| Node · last | `#8ab17d` | `DISTANCE_COLORS[3]` — see below |
+| Node · root | `#e63946` | fixed marque colour |
+| Node · next | `#f4a261` | fixed marque colour |
+| Node · last | `#8ab17d` | fixed marque colour — see below |
 
-The node hues come from the app's own BFS distance ramp
-(`DISTANCE_COLORS` in [`web/src/styling.js`](../web/src/styling.js)), whose
-legend paints distance *N* with entry *N*. If the three nodes are read strictly
+The three node colours were taken from the app's BFS distance ramp
+(`DISTANCE_COLORS` in [`web/src/styling.js`](../web/src/styling.js)) back when
+that ramp was a six-hue rainbow. The app's ramp is now a single hue — deep for
+the searched word, lightening outward, see the Cytoscape notes in
+[`AGENTS.md`](../AGENTS.md) — so these are **fixed marque colours, not a live
+reference**: a mark that tracked the data palette would need redrawing every time
+the palette moved, and navy nodes against the navy letter would cost the mark its
+legibility. The note below is kept as the record of how the third was chosen.
+
+If the three nodes are read strictly
 as 0 → 1 → 2 changes out from the root, the third should be entry 2, `#e9c46a`.
 That was tried and rejected: measured at 16 px, amber collapses against the
 orange node (RGB separation falls from 90 to 33) so two of the three nodes stop

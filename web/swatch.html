@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Word Graph — colour &amp; type options</title>
+    <!-- A scratch sheet for choosing the graph's palette and type. Not part of
+         the app: no build step, no imports, sizes are the ones measured off the
+         real render. Delete once the choices are settled. -->
+    <style>
+      :root {
+        color-scheme: light;
+        font-family: system-ui, sans-serif;
+        --ink: #0f172a;
+        --ink-muted: #64748b;
+        --line: #e2e8f0;
+        --canvas: #f8fafc;
+      }
+      body { margin: 0; padding: 2rem; background: #fff; color: var(--ink); }
+      h1 { font-size: 1.1rem; margin: 0 0 0.25rem; }
+      p.lede { color: var(--ink-muted); font-size: 0.85rem; margin: 0 0 1.5rem; max-width: 60ch; }
+      section { margin-bottom: 2.25rem; }
+      h2 { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-muted); margin: 0 0 0.75rem; border-bottom: 1px solid var(--line); padding-bottom: 0.4rem; }
+      .note { font-size: 0.78rem; color: var(--ink-muted); margin: 0.6rem 0 0; max-width: 78ch; }
+      .bad { color: #b91c1c; }
+      .good { color: #15803d; }
+      /* The canvas the nodes actually sit on. */
+      .field { background: var(--canvas); border: 1px solid var(--line); border-radius: 10px; padding: 1.25rem; display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+      .pill { display: flex; align-items: center; justify-content: center; border: 1.5px solid rgba(0,0,0,0.15); font-weight: 600; white-space: nowrap; box-sizing: border-box; }
+      .pill.root { border: 3px solid #0b2439; }
+      .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+      .labels { display: flex; gap: 1rem; flex-wrap: wrap; }
+      .labels > div { display: flex; flex-direction: column; gap: 0.35rem; }
+      .caption { font-size: 0.72rem; color: var(--ink-muted); }
+      .swatches { display: flex; gap: 0; border-radius: 6px; overflow: hidden; }
+      .swatches i { display: block; width: 3.5rem; height: 1.5rem; }
+      label.toggle { display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.8rem; margin-bottom: 1.25rem; }
+    </style>
+  </head>
+  <body>
+    <h1>Colour &amp; type for the graph</h1>
+    <p class="lede">
+      Node sizes are the real ones, measured from the app at zoom 1 — a
+      &ldquo;hotel&rdquo; search at 3 changes (36 words) and 5 changes (566 words).
+      Every word in a view is the same length, which is why the monospace option
+      below makes every box exactly the same width.
+    </p>
+
+    <label class="toggle"><input type="checkbox" id="cvd" /> simulate deuteranopia (the most common colour blindness)</label>
+
+    <section>
+      <h2>1 · what is there now — rainbow, system-ui 600, dark navy label</h2>
+      <div class="field" id="now-small"></div>
+      <div class="swatches" id="now-ramp" style="margin-top:1rem"></div>
+      <p class="note">
+        <span class="bad">Problems, measured:</span> dark navy on these fills fails
+        the 4.5:1 body-text contrast on <em>four</em> of seven colours — worst on
+        <strong>#6d597a</strong> at 1.98:1 and <strong>#457b9d</strong> at 2.69:1
+        (even the root red is 2.97:1, under the 3:1 large-text floor). The white
+        halo meant to rescue it is invisible on the pale fills (1.67:1 on
+        <strong>#e9c46a</strong>). Orange&nbsp;→&nbsp;yellow collapses to a
+        &Delta;E of <strong>6.2</strong> under deuteranopia, i.e. those two rings
+        are the same colour to ~6% of men.
+      </p>
+    </section>
+
+    <section>
+      <h2>2 · the type — same sizes, three ways</h2>
+      <div class="labels" id="type-options"></div>
+      <p class="note">
+        Look at <strong>ring 3 at 36 words</strong>: <span id="size-callout"></span>.
+        The mono face is the one that pulls its weight here: every word in a search
+        is the same length, so all boxes become identical and the letters line up
+        between rings — you can see <em>which</em> position changed, which is the
+        whole point of a word ladder. It also has unambiguous l/I/1 and O/0.
+      </p>
+    </section>
+
+    <section>
+      <h2>3 · palette option A — fix in place</h2>
+      <div class="field" id="fix-small"></div>
+      <div class="swatches" id="fix-ramp" style="margin-top:1rem"></div>
+      <p class="note">Same six hues, but the yellow (the one that vanishes against the orange) is replaced by a deeper amber, the teal is darkened, and each label picks white or navy by its own fill's luminance.</p>
+    </section>
+
+    <section>
+      <h2>4 · palette option B — sequential, root deepest &nbsp;·&nbsp; APPLIED</h2>
+      <div class="field" id="seq-small"></div>
+      <div class="swatches" id="seq-ramp" style="margin-top:1rem"></div>
+      <p class="note">What is in the app now, with the root taking the same hue at its deepest stop rather than its own red. Distance is already encoded twice — by ring position and by node size — so colour does not have to carry it. Nothing to collide under any colour blindness: every adjacent pair holds a 9.5 dE separation under deuteranopia and protanopia alike, where the old orange-to-yellow step fell to 6.2. Worst label contrast across the ramp is 4.65:1, against 1.98:1 before.</p>
+    </section>
+
+    <script>
+      // Measured from the live app. Tier 1 = searches up to 25 words, tier 2 = up to 90.
+      const SIZES = {
+        tier1: [
+          { word: "hotel", w: 102, h: 50, font: 21.8 },
+          { word: "motel", w: 71, h: 35, font: 15 },
+          { word: "morel", w: 63, h: 31, font: 13.5 },
+          { word: "homer", w: 48, h: 24, font: 10.2 },
+        ],
+        tier2: [
+          { word: "hotel", w: 75, h: 37, font: 16 },
+          { word: "motel", w: 52, h: 25, font: 11 },
+          { word: "morel", w: 47, h: 23, font: 9.9 },
+          { word: "homer", w: 35, h: 17, font: 7.5 },
+        ],
+      };
+
+      const NOW = ["#e63946", "#f4a261", "#e9c46a", "#8ab17d", "#2a9d8f", "#457b9d", "#6d597a"];
+      const FIX = ["#c1121f", "#f4a261", "#dd9d2f", "#6f9c6b", "#1f7a6f", "#3d6d94", "#5d4a68"];
+      const SEQ = ["#12395e", "#2d5375", "#486c8c", "#6386a3", "#7ea0ba", "#99b9d1", "#b4d3e8"];
+
+      function contrast(a, b) {
+        const lin = (c) => (c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
+        const lum = (hex) => {
+          const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255).map(lin);
+          return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+        };
+        const [l1, l2] = [lum(a), lum(b)].sort((x, y) => y - x);
+        return (l1 + 0.05) / (l2 + 0.05);
+      }
+
+      // A label has to be readable on its own fill: pick white or navy by luminance.
+      const inkFor = (fill) => (contrast(fill, "#ffffff") >= contrast(fill, "#0f172a") ? "#ffffff" : "#0f172a");
+
+      function drawField(host, palette, opts) {
+        host.innerHTML = "";
+        SIZES[opts.tier].forEach((node, i) => {
+          const fill = palette[Math.min(i, palette.length - 1)];
+          const el = document.createElement("div");
+          el.className = "pill" + (i === 0 ? " root" : "") + (opts.mono ? " mono" : "") + " sim";
+          // Sizes are model units at zoom 1, which is what the user sees.
+          el.style.width = node.w + "px";
+          el.style.height = node.h + "px";
+          el.style.fontSize = node.font + "px";
+          el.style.background = fill;
+          el.style.fontWeight = opts.weight;
+          el.style.color = opts.perNodeInk ? inkFor(fill) : "#0f172a";
+          el.style.textShadow = opts.perNodeInk ? "none" : "0 0 2px #fff, 0 0 2px #fff";
+          el.textContent = node.word;
+          host.appendChild(el);
+        });
+      }
+
+      function drawRamp(host, palette) {
+        host.innerHTML = "";
+        palette.forEach((c) => {
+          const i = document.createElement("i");
+          i.className = "sim";
+          i.style.background = c;
+          host.appendChild(i);
+        });
+      }
+
+      const nowSmall = document.getElementById("now-small");
+      const fixSmall = document.getElementById("fix-small");
+      const seqSmall = document.getElementById("seq-small");
+      drawField(nowSmall, NOW, { tier: "tier2", mono: false, weight: 600, perNodeInk: false });
+      drawField(fixSmall, FIX, { tier: "tier2", mono: true, weight: 500, perNodeInk: true });
+      drawField(seqSmall, SEQ, { tier: "tier2", mono: true, weight: 500, perNodeInk: true });
+      drawRamp(document.getElementById("now-ramp"), NOW);
+      drawRamp(document.getElementById("fix-ramp"), FIX);
+      drawRamp(document.getElementById("seq-ramp"), SEQ);
+
+      // The three type treatments, all on the same fill, at the real sizes.
+      const TYPE_CASES = [
+        { label: "system-ui 600 (now)", mono: false, weight: 600 },
+        { label: "monospace 500", mono: true, weight: 500 },
+        { label: "monospace 500, larger minimum", mono: true, weight: 500 },
+      ];
+      const typeHost = document.getElementById("type-options");
+      TYPE_CASES.forEach((tc) => {
+        const box = document.createElement("div");
+        const cap = document.createElement("span");
+        cap.className = "caption";
+        cap.textContent = tc.label;
+        box.appendChild(cap);
+        const row = document.createElement("div");
+        row.className = "field";
+        SIZES.tier2.forEach((node, i) => {
+          const el = document.createElement("div");
+          el.className = "pill" + (i === 0 ? " root" : "") + (tc.mono ? " mono" : "") + " sim";
+          el.style.background = FIX[i];
+          el.style.color = inkFor(FIX[i]);
+          el.style.fontWeight = tc.weight;
+          el.style.height = node.h + "px";
+          el.textContent = node.word;
+          // third case keeps rings 3+ at a legible floor instead of shrinking away
+          const font = tc.label.includes("minimum") ? Math.max(node.font, 10.5) : node.font;
+          el.style.fontSize = font + "px";
+          el.style.width = Math.max(node.w, node.font === font ? node.w : 5 * font * 0.62 + font * 1.6) + "px";
+          row.appendChild(el);
+        });
+        box.appendChild(row);
+        typeHost.appendChild(box);
+      });
+
+      document.getElementById("size-callout").textContent =
+        "the label renders at " + SIZES.tier2[3].font + "px, below the ~10px floor for anything meant to be read";
+
+      // Deuteranopia simulation, Machado 2009 at severity 100.
+      const DEUT = [
+        [0.367322, 0.860646, -0.227968],
+        [0.280085, 0.672501, 0.047413],
+        [-0.01182, 0.04294, 0.968881],
+      ];
+      document.getElementById("cvd").addEventListener("change", (e) => {
+        const on = e.target.checked;
+        document.querySelectorAll(".sim").forEach((el) => {
+          if (!el.dataset.rawFill) el.dataset.rawFill = rgbToHex(getComputedStyle(el).backgroundColor);
+          el.style.background = on ? simulate(el.dataset.rawFill, DEUT) : el.dataset.rawFill;
+        });
+      });
+
+      function rgbToHex(rgb) {
+        const nums = rgb.match(/\d+/g).map(Number);
+        return "#" + nums.slice(0, 3).map((n) => n.toString(16).padStart(2, "0")).join("");
+      }
+      function simulate(hex, M) {
+        const lin = (c) => (c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
+        const unlin = (c) => (c <= 0.0031308 ? c * 12.92 : 1.055 * c ** (1 / 2.4) - 0.055);
+        const rgb = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255).map(lin);
+        const out = M.map((row) => row[0] * rgb[0] + row[1] * rgb[1] + row[2] * rgb[2]);
+        return "#" + out.map((v) => Math.round(Math.max(0, Math.min(1, unlin(Math.max(0, Math.min(1, v))))) * 255).toString(16).padStart(2, "0")).join("");
+      }
+    </script>
+  </body>
+</html>

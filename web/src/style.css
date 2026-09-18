@@ -11,6 +11,12 @@
   --field-line: #cbd5e1;
   --accent: #457b9d;
   --danger: #b91c1c;
+  /* Words are monospace, chrome is not. Every word in a view is the same
+     length, so the mono advance makes every node box identical and lines the
+     letters up between rings -- which is how you see *which* position changed.
+     Kept in step with LABEL_FONT in src/styling.js, which cytoscape needs as a
+     literal because it draws labels on a canvas. */
+  --font-word: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
 }
 
 body {
@@ -113,6 +119,7 @@ body[data-view="landing"] #brand-name {
 }
 
 #hover-word {
+  font-family: var(--font-word);
   font-size: 1rem;
   font-weight: 600;
   color: var(--accent);
@@ -159,6 +166,7 @@ body[data-view="landing"] #search-form {
   outline: none;
   background: transparent;
   font: inherit;
+  font-family: var(--font-word);
   font-size: 0.95rem;
   color: var(--ink);
 }
@@ -304,6 +312,7 @@ body[data-view="landing"] #status {
 #path-list li {
   position: relative;
   padding: 0.5rem 0;
+  font-family: var(--font-word);
   font-weight: 700;
   color: #1d3557;
 }
@@ -317,16 +326,9 @@ body[data-view="landing"] #status {
   width: 0.55rem;
   height: 0.55rem;
   border-radius: 50%;
-  background: #457b9d;
+  /* Set per item by showPath(), to the colour of that word's ring. */
+  background: var(--dot, var(--accent));
   box-shadow: 0 0 0 3px #ffffff;
-}
-
-#path-list li:first-child::before {
-  background: #e63946;
-}
-
-#path-list li:last-child::before {
-  background: #f4a261;
 }
 
 #graph-container {

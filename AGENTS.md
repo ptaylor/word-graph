@@ -209,6 +209,40 @@ Full specification: [`graph/README.md`](graph/README.md).
     re-centre after anything that changes the canvas width (here, the path panel
     appearing narrows it by 200px and drags the root off centre by half of
     that).
+  - Node colour is a single-hue ramp, deepest for the searched word and
+    lightening outward (`DISTANCE_COLORS`) — not a rainbow. Distance is ordinal
+    and is already carried by ring radius and node size, so colour only has to
+    confirm it; the old six-hue ramp was qualitative colour on ordered data, and
+    it failed 4.5:1 label contrast on 4 of its 7 fills while its orange-to-yellow
+    step collapsed to a 6.2 dE separation under deuteranopia. Each node now also
+    picks its own label ink (white or navy) from its fill by measured contrast:
+    worst case 4.65:1, with every adjacent pair holding 9.5 dE under both
+    deuteranopia and protanopia.
+  - Words are set in monospace (`LABEL_FONT`, kept in step with `--font-word` in
+    `style.css`) and the chrome in the system sans. Every word in a view is the
+    same length, so a fixed advance gives every box an identical width and lines
+    the letters up between rings — which is what shows *which* position changed,
+    the thing a word ladder is about. Weight 500, and `MIN_LABEL_FONT` (10px)
+    floors the ramp: below that a label is texture, not text.
+  - The path highlight is ink (`#0f172a`), not a hue. It used to reuse the
+    ramp's own orange, so "route" was painted in the colour that already meant
+    "one change away".
+  - Keep layouts unanimated (`animate: false`). An animated layout keeps
+    animating the element ids it was handed, and a re-render recreates those same
+    ids, so a second search arriving inside the first one's animation drags the
+    new nodes back to the old start frame: pressing Enter twice 50ms apart left
+    all 181 nodes stacked at the origin in an 81x43 box at `maxZoom`. `stop()` on
+    the layout and on the elements did not clear it. Both layouts place instantly
+    anyway (breadthfirst is 119ms at 566 words), and node styles still transition
+    width and colour, so the graph is not visibly abrupt.
+  - `cy.layout(options)` runs the layout immediately — use `cy.makeLayout()` when
+    you intend to call `run()` yourself, or the layout runs twice and stopping it
+    only clears half.
+  - Call the stand-in `fit()` only when the layout has not already settled (a
+    non-animated layout fires `layoutstop` inside `run()`), or it undoes the
+    root-centred view the handler just set. That went unnoticed while the
+    layouts animated, because a symmetric ring layout fits about the same place
+    as it centres.
   - Cytoscape's style parser doesn't support 4/8-digit hex colors
     (`#8888`) — use 3/6-digit hex or `rgba()`.
 - **Docs**: https://js.cytoscape.org/

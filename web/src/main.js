@@ -1,8 +1,8 @@
 import cytoscape from "cytoscape";
 import { loadManifest, loadLength, bfsDistances, bfsPath } from "./graph.js";
-import { tierFor, buildStylesheet, colorForDistance, nodeDimensions, fontSizeFor } from "./styling.js";
+import { tierFor, buildStylesheet, colorForDistance, nodeDimensions, fontSizeFor, labelInkFor } from "./styling.js";
 
-const DEFAULT_MAX_DISTANCE = 5;
+const DEFAULT_MAX_DISTANCE = 4;
 
 const searchForm = document.getElementById("search-form");
 const wordInput = document.getElementById("word-input");
@@ -22,6 +22,7 @@ let cy = null;
 let wordCountByLength = new Map();
 let currentExplore = null; // { data, startIndex } for the active search, used by path-on-click
 let layoutChoice = "rings";
+let activeLayout = null; // so a new render can stop one still animating
 
 function setStatus(message, tone) {
   status.textContent = message;
@@ -114,9 +115,13 @@ function showPath(targetIndex) {
   }
 
   pathList.innerHTML = "";
-  for (const index of path) {
+  for (const [step, index] of path.entries()) {
     const item = document.createElement("li");
     item.textContent = data.words[index];
+    // The path is a shortest path, so its position in the list *is* the number
+    // of changes: the dot takes that ring's colour, and the panel agrees with
+    // the graph rather than carrying its own palette.
+    item.style.setProperty("--dot", colorForDistance(step));
     pathList.appendChild(item);
   }
   pathPanel.hidden = false;
@@ -174,7 +179,7 @@ function renderLegend(maxDistance) {
     item.innerHTML = `<span class="legend-swatch" style="background:${color}"></span>${text}`;
     legend.appendChild(item);
   };
-  addItem("#e63946", "root");
+  addItem(colorForDistance(0), "root");
   for (let distance = 1; distance <= maxDistance; distance++) {
     addItem(colorForDistance(distance), `${distance} change${distance > 1 ? "s" : ""}`);
   }
@@ -183,6 +188,18 @@ function renderLegend(maxDistance) {
 function renderElements(elements, tier, layoutOptions, onSettled) {
   const instance = getCy();
   instance.style(buildStylesheet(tier));
+  // A layout that is still animating keeps animating the elements it was given,
+  // and remove()+add() below recreates those same element ids -- so the stale
+  // animation drags the *new* nodes back to its own starting frame. Measured:
+  // pressing Enter twice 50ms apart left all 181 nodes stacked at 0,0 with every
+  // one of them reporting animated() === true, and a 81x43 bounding box at
+  // maxZoom. Stopping the elements is the part that matters; stopping the layout
+  // alone does not clear their animations.
+  if (activeLayout) {
+    activeLayout.stop();
+    activeLayout = null;
+  }
+  instance.elements().stop();
   instance.elements().remove();
   instance.add(elements);
   instance.autoungrabify(tier.locked);
@@ -208,14 +225,24 @@ function renderElements(elements, tier, layoutOptions, onSettled) {
   // starting positions; and a fit on layoutstop fires in the same tick as
   // anything registered here, so it would undo a pan applied alongside it.
   // Fitting and recentring therefore both happen at the end, in this order.
-  const layout = instance.layout({ ...layoutOptions, fit: false });
+  // makeLayout(), not layout(): cy.layout() runs the layout immediately, so
+  // calling run() on it as well started the layout -- and its animation -- twice
+  // over, and stop() then only cleared one of them.
+  const layout = instance.makeLayout({ ...layoutOptions, fit: false });
+  activeLayout = layout;
   layout.one("layoutstop", () => {
+    if (activeLayout !== layout) return; // superseded by a newer render
+    activeLayout = null;
     // A search recentres on its own root, which subsumes fitting.
     if (onSettled) onSettled();
     else instance.fit(undefined, padding);
-  });
-  layout.run();
-  instance.fit(undefined, padding); // stands in if layoutstop never arrives
+  });  layout.run();
+  // Only stand in if the layout has not already settled. A non-animated layout
+  // fires layoutstop inside run(), and the handler above clears activeLayout, so
+  // this no longer clobbers the centring it just did -- which an unconditional
+  // fit() did, and which only looked harmless because a symmetric ring layout
+  // fits about the same place as it centres.
+  if (activeLayout === layout) instance.fit(undefined, padding);
 }
 
 // Two ways to read the same subgraph, offered side by side because neither wins
@@ -223,7 +250,15 @@ function renderElements(elements, tier, layoutOptions, onSettled) {
 // searched word, which is the app's whole idea, so that is the default; Organic
 // packs tighter but leaves distance to colour and size.
 function layoutOptionsFor(tier, nodeCount, rootId) {
-  const animate = nodeCount <= 300;
+  // No animation, anywhere. An animated layout keeps animating the element ids
+  // it was given, and because a re-render recreates those ids, a second search
+  // inside the first one's animation dragged the new nodes back to the old start
+  // frame: measured, pressing Enter twice left all 181 nodes stacked at 0,0 in
+  // an 81x43 box at maxZoom. stop() on the layout and on the elements did not
+  // clear it. Both layouts are fast enough to place instantly -- breadthfirst is
+  // 119ms at 566 words -- and the node styles still transition width and colour,
+  // so the graph is not visibly abrupt.
+  const animate = false;
   if (layoutChoice === "organic") {
     return {
       name: "cose",
@@ -305,11 +340,14 @@ async function explore() {
   const nodes = [...distances.entries()].map(([index, distance]) => {
     const isRoot = index === startIndex;
     const label = data.words[index];
+    const fill = colorForDistance(distance);
     return {
       data: {
         id: String(index),
         label,
-        color: colorForDistance(distance),
+        color: fill,
+        // White or navy, whichever actually reads on this fill.
+        ...labelInkFor(fill),
         distance,
         // Sized by distance: the searched word is the biggest box on screen and
         // each ring outward is smaller. The font travels with the scale, since

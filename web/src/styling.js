@@ -18,7 +18,11 @@ const TIERS = [
   {
     max: 90,
     nodeSize: 30,
-    fontSize: 11,
+    // 14 rather than 11: the deepest ring a 90-word search reaches sits at 0.681
+    // of the tier size, and at 11 that was 7.5px -- under the legibility floor.
+    // The floor would then flatten rings 1-3 onto the same size, so the tier has
+    // to be big enough that the floor is a backstop rather than the rule.
+    fontSize: 14,
     shape: "round-rectangle",
     labelAlways: true,
     edgeWidth: 1.5,
@@ -30,7 +34,7 @@ const TIERS = [
   {
     max: 300,
     nodeSize: 18,
-    fontSize: 9,
+    fontSize: 11,
     shape: "ellipse",
     labelAlways: false,
     edgeWidth: 1,
@@ -42,7 +46,7 @@ const TIERS = [
   {
     max: Infinity,
     nodeSize: 8,
-    fontSize: 8,
+    fontSize: 10,
     shape: "ellipse",
     labelAlways: false,
     edgeWidth: 0.6,
@@ -57,13 +61,46 @@ export function tierFor(nodeCount) {
   return TIERS.find((tier) => nodeCount <= tier.max);
 }
 
-// Perceptually distinct, warm-to-cool scale: root is always red regardless of
-// this (see node.root style), so distance 0 here only matters for full-graph
-// (single-color) rendering.
-const DISTANCE_COLORS = ["#e63946", "#f4a261", "#e9c46a", "#8ab17d", "#2a9d8f", "#457b9d", "#6d597a"];
+// Distance is an ordered quantity, so the ramp is one hue from deep to light
+// rather than six unrelated colours. Position and node size already carry the
+// distance; a single hue confirms it without inventing category boundaries, and
+// it cannot collide under colour blindness -- every adjacent pair holds its ~9.5
+// dE separation under deuteranopia and protanopia, where the old rainbow's
+// orange-to-yellow step collapsed to 6.2. The searched word takes the deepest
+// stop, so the biggest node is also the strongest thing on screen.
+const DISTANCE_COLORS = ["#12395e", "#2d5375", "#486c8c", "#6386a3", "#7ea0ba", "#99b9d1", "#b4d3e8"];
 
 export function colorForDistance(distance) {
   return DISTANCE_COLORS[Math.min(distance, DISTANCE_COLORS.length - 1)];
+}
+
+// One ink cannot serve a ramp this wide: against the deepest stop (#12395e)
+// white scores 4.65:1 but the dark navy only 1.5:1, and against the lightest
+// stop it is the other way round. So each node picks its own ink by measured
+// contrast, and the halo takes the opposite one so a label still reads when it
+// sits over an edge.
+const LABEL_LIGHT = "#ffffff";
+const LABEL_DARK = "#0f172a";
+
+function channelToLinear(value) {
+  const c = value / 255;
+  return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+}
+
+function relativeLuminance(hex) {
+  const [r, g, b] = [1, 3, 5].map((i) => channelToLinear(parseInt(hex.slice(i, i + 2), 16)));
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
+function contrastRatio(a, b) {
+  const [hi, lo] = [relativeLuminance(a), relativeLuminance(b)].sort((x, y) => y - x);
+  return (hi + 0.05) / (lo + 0.05);
+}
+
+export function labelInkFor(fill) {
+  return contrastRatio(fill, LABEL_LIGHT) >= contrastRatio(fill, LABEL_DARK)
+    ? { textColor: LABEL_LIGHT, textHalo: LABEL_DARK }
+    : { textColor: LABEL_DARK, textHalo: LABEL_LIGHT };
 }
 
 // Nodes shrink with each hop out from the searched word, so the graph reads
@@ -94,10 +131,21 @@ function scaleForDistance(distance) {
   return Math.max(MIN_SCALE, DISTANCE_DECAY ** distance);
 }
 
+// Words are drawn in a monospace face (see --font-word in style.css, which has
+// to hold the same stack). Every word in a view is the same length, so a fixed
+// advance gives every box an identical width and lines the letters up between
+// rings: the changed position is visible at a glance. It also has unambiguous
+// l/I/1 and O/0, which matters when those are the letters being compared.
+const LABEL_FONT = 'ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace';
+
+// Nothing below this is text, it is texture. The old ramp reached 4.2px in the
+// dense tiers and 7.5px in the pill tiers.
+const MIN_LABEL_FONT = 10;
+
 // The single source of truth for type size, so a node's box is always measured
 // against the font it actually renders at.
 export function fontSizeFor(tier, distance) {
-  return tier.fontSize * scaleForDistance(distance);
+  return Math.max(MIN_LABEL_FONT, tier.fontSize * scaleForDistance(distance));
 }
 
 // Explicit pixel dimensions per node, computed from its label rather than
@@ -114,8 +162,7 @@ export function nodeDimensions(word, tier, distance) {
     return { w: size, h: size };
   }
   const charWidth = fontSize * 0.62;
-  const w = Math.max(word.length * charWidth + fontSize * 1.6, fontSize * 3);
-  const h = fontSize * 2.3;
+  const w = Math.max(word.length * charWidth + fontSize * 1.6, fontSize * 3);  const h = fontSize * 2.3;
   return { w, h };
 }
 
@@ -126,16 +173,19 @@ export function buildStylesheet(tier) {
       selector: "node",
       style: {
         label: tier.labelAlways ? "data(label)" : "",
-        "font-family": "system-ui, sans-serif",
+        "font-family": LABEL_FONT,
         // Per node, not per tier: the box was measured against this font, so
         // both have to come from the same scale or the label overflows.
         "font-size": "data(fontSize)",
-        "font-weight": 600,
-        color: "#1d3557",
+        // 500, not 600: the heavier weight is what made the small sizes muddy.
+        "font-weight": 500,
+        // Per node, from labelInkFor(): one ink cannot stay legible across a
+        // ramp this wide.
+        color: "data(textColor)",
         "text-valign": "center",
         "text-halign": "center",
         "text-outline-width": tier.labelAlways ? 2 : 0,
-        "text-outline-color": "#ffffff",
+        "text-outline-color": "data(textHalo)",
         "background-color": "data(color)",
         shape: tier.shape,
         width: "data(w)",
@@ -154,18 +204,19 @@ export function buildStylesheet(tier) {
         // Tier font, not the ring-scaled one: in the dense tiers this is the
         // only way to read a word, and a label sized to an 8px node would be
         // illegible. It spills outside the node, which reads as a tooltip.
-        ...(tier.labelAlways ? {} : { "font-size": tier.fontSize }),
+        ...(tier.labelAlways ? {} : { "font-size": Math.max(MIN_LABEL_FONT, tier.fontSize) }),
         "text-outline-width": 2,
-        "text-outline-color": "#ffffff",
+        "text-outline-color": "data(textHalo)",
         "z-index": 5,
       },
     },
     {
       selector: "node.root",
       style: {
-        "background-color": "#e63946",
+        // No background override: the root's own distance colour is the deepest
+        // stop of the ramp, so it is already the strongest fill on screen.
         "border-width": 3,
-        "border-color": "#7a1f27",
+        "border-color": "#0b2439",
         // Must match the font nodeDimensions() measured the box against, or the
         // label overflows the box it was sized for.
         "font-size": fontSizeFor(tier, 0),
@@ -173,7 +224,7 @@ export function buildStylesheet(tier) {
         shape: "round-rectangle",
         label: "data(label)",
         "text-outline-width": 2,
-        "text-outline-color": "#ffffff",
+        "text-outline-color": "data(textHalo)",
         "z-index": 10,
       },
     },
@@ -192,16 +243,18 @@ export function buildStylesheet(tier) {
       style: {
         label: "data(label)",
         "text-outline-width": 2,
-        "text-outline-color": "#ffffff",
+        "text-outline-color": "data(textHalo)",
+        // Ink, not a hue: the old highlight reused the ramp's own orange, so
+        // "route" was painted the colour that meant "one change away".
         "border-width": 4,
-        "border-color": "#f4a261",
+        "border-color": "#0f172a",
         "z-index": 12,
       },
     },
     {
       selector: "edge.path-edge",
       style: {
-        "line-color": "#f4a261",
+        "line-color": "#0f172a",
         width: tier.edgeWidth + 2,
         opacity: 1,
         "z-index": 6,
