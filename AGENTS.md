@@ -181,9 +181,9 @@ Full specification: [`graph/README.md`](graph/README.md).
   - Build the full node/edge element array first, then call `cy.add()` once
     — avoid adding elements one at a time, which triggers repeated re-layout.
   - The app offers both searched-graph layouts in the bar — `Rings`
-    (`breadthfirst` with `circle: true`, which puts change distance on screen as
-    literal distance from the searched word) and `Compact` (`cose`, which packs
-    tighter but leaves distance to colour and size) — because neither wins
+    (`breadthfirst` with `circle: true`, the default: change distance on screen
+    as literal distance from the searched word) and `Organic` (`cose`, which
+    packs tighter but leaves distance to colour and size) — because neither wins
     outright. See `layoutOptionsFor()` in `web/src/main.js`.
   - **Pin the zoom before running a layout.** `breadthfirst` sizes its rings
     from the nodes' *screen-space* dimensions, so whatever zoom it finds leaks
@@ -194,11 +194,13 @@ Full specification: [`graph/README.md`](graph/README.md).
     first, which makes the geometry a property of the graph rather than of the
     previous view, so toggling layouts is now stable. (An earlier note in this
     file blamed `spacingFactor` for that blow-up; it was the zoom leak.)
-  - `cose` is O(n²) per iteration and runs them in a tight loop: a 566-word
-    search blocked the main thread for 59s, and `animate: true` only spreads the
-    same work across frames (still ~30s, with worse packing). Cap it by node
-    count and fall back to `grid`, which packs the same words in under a
-    millisecond — see `COMPACT_FORCE_LIMIT`.
+  - `cose` is O(n²) per iteration and runs them in a tight loop, so its
+    iteration budget has to fall as the word count rises: 500 iterations is
+    under a second up to ~200 words, but on a 566-word search it blocks the main
+    thread for 59s (40 iterations costs 4.2s, 80 costs 6.0s). `animate: true` is
+    not a workaround — it spreads the same work across frames, still ~30s, with
+    worse packing. Past 200 words it scales at `34000 / nodeCount`, floored at
+    60.
   - A layout only measures the viewport at the moment it runs, and cytoscape
     clamps to `minZoom` rather than complaining. So a layout run while the
     container is `display: none` (e.g. laying out before switching the app from

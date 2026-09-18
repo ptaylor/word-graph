@@ -3,9 +3,6 @@ import { loadManifest, loadLength, bfsDistances, bfsPath } from "./graph.js";
 import { tierFor, buildStylesheet, colorForDistance, nodeDimensions, fontSizeFor } from "./styling.js";
 
 const DEFAULT_MAX_DISTANCE = 5;
-// Above this many words the compact view drops the force layout for the grid:
-// see layoutOptionsFor().
-const COMPACT_FORCE_LIMIT = 250;
 
 const searchForm = document.getElementById("search-form");
 const wordInput = document.getElementById("word-input");
@@ -223,26 +220,24 @@ function renderElements(elements, tier, layoutOptions, onSettled) {
 
 // Two ways to read the same subgraph, offered side by side because neither wins
 // outright. Rings put the change distance on screen as literal distance from the
-// searched word, but a wide ring forces a wide circle. The compact view packs
-// tighter, at the cost of showing distance only through colour and size.
+// searched word, which is the app's whole idea, so that is the default; Organic
+// packs tighter but leaves distance to colour and size.
 function layoutOptionsFor(tier, nodeCount, rootId) {
   const animate = nodeCount <= 300;
-  if (layoutChoice === "compact") {
-    // A force layout earns its cost on a small graph and is hopeless on a big
-    // one. cose is O(n^2) per iteration and computes the iterations in a tight
-    // loop, so a 566-word search blocks the main thread -- measured at 59s
-    // unanimated, and still 30s of jank with animate:true, which only spreads
-    // the same work across frames. Past this size the grid packs the same words
-    // (1953x793 units against cose's 1101) in under a millisecond.
-    if (nodeCount > COMPACT_FORCE_LIMIT) {
-      return { name: "grid", animate: false, fit: false, padding: 20 };
-    }
+  if (layoutChoice === "organic") {
     return {
       name: "cose",
       idealEdgeLength: 70 * tier.spacingFactor,
       nodeRepulsion: 12000,
       gravity: 50,
-      numIter: 500,
+      // cose is O(n^2) per iteration and computes them in a tight loop, so the
+      // iteration budget has to come down as the word count goes up. 500 is
+      // under a second up to ~200 words, but on a 566-word search it blocked
+      // the main thread for 59s; measured at 566 words, 40 iterations costs
+      // 4.2s and 80 costs 6.0s (and packs tighter). Past 200 words trade
+      // packing for time. (animate:true is not the answer -- it spreads the
+      // same work across frames, still ~30s, with worse packing.)
+      numIter: nodeCount <= 200 ? 500 : Math.max(60, Math.round(34000 / nodeCount)),
       randomize: false,
       animate,
       animationDuration: 300,
@@ -338,6 +333,7 @@ async function explore() {
 
   if (nodes.length === 0) {
     currentExplore = null;
+    // Nothing to place, so the layout is only there to satisfy renderElements.
     renderElements([], tier, { name: "grid" });
     renderLegend(null);
     setView("graph");
@@ -349,6 +345,13 @@ async function explore() {
   // Reveal the canvas before laying out: the layout measures the viewport.
   setView("graph");
   renderLegend(maxDistance);
+  // The force layout works in a tight loop, so on a big search it blocks the
+  // main thread for seconds. Paint the hint and let the browser actually draw
+  // it first, or the freeze reads as a hang.
+  if (layoutChoice === "organic" && nodes.length > 150) {
+    setStatus(`Laying out ${nodes.length} words\u2026`);
+    await new Promise((resolve) => requestAnimationFrame(() => setTimeout(resolve, 0)));
+  }
   // Force-directed or rings, choose in the bar. Both are measured against the
   // same word count, so the tier's own spread knob only applies to the former.
   renderElements(
