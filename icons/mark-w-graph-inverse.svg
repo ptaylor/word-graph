@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 72 72" width="72" height="72" role="img" aria-label="Word Graph">
+  <title>Word Graph</title>
+  <!-- Inverted ink for dark backgrounds: the letter goes white, so the routed edge
+       has to go dark to stay inside it. Node hues are unchanged. -->
+  <path d="M11 20 L23 52 L36 20 L49 52 L61 20" fill="none" stroke="#ffffff" stroke-width="15" stroke-linecap="round" stroke-linejoin="round" />
+  <path d="M17 36 L23 52 L36 20 L45.4 43" fill="none" stroke="#2b4c7a" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" />
+  <circle cx="17" cy="36" r="6.5" fill="#e63946" />
+  <circle cx="36" cy="20" r="6.5" fill="#f4a261" />
+  <circle cx="45.4" cy="43" r="6.5" fill="#8ab17d" />
+</svg>

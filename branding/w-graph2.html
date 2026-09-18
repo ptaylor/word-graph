@@ -1,0 +1,303 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Word Graph — thicker W, offset nodes</title>
+    <style>
+      :root {
+        font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+        color: #1d3557;
+      }
+      body {
+        margin: 0;
+        padding: 36px 44px 56px;
+        background: #f8fafc;
+        width: 1120px;
+        box-sizing: border-box;
+      }
+      h1 {
+        margin: 0 0 6px;
+        font-size: 24px;
+        letter-spacing: -0.02em;
+      }
+      .sub {
+        margin: 0 0 30px;
+        color: #64748b;
+        font-size: 13.5px;
+        line-height: 1.55;
+        max-width: 850px;
+      }
+      .concept {
+        margin-bottom: 26px;
+      }
+      .head {
+        display: flex;
+        align-items: baseline;
+        gap: 10px;
+        margin-bottom: 10px;
+      }
+      .head h2 {
+        margin: 0;
+        font-size: 15.5px;
+      }
+      .head .tag {
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #0f766e;
+        background: #ccfbf1;
+        padding: 2px 7px;
+        border-radius: 99px;
+      }
+      .head .heights {
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 11px;
+        color: #94a3b8;
+      }
+      .panel {
+        border-radius: 14px;
+        border: 1px solid #e2e8f0;
+        background: #fff;
+        padding: 16px 18px;
+        display: flex;
+        gap: 30px;
+        align-items: center;
+      }
+      .zone {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .zone-label {
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #94a3b8;
+      }
+      .zone-body {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+      }
+      .zone.dark {
+        background: #0f172a;
+        border-radius: 10px;
+        padding: 12px 14px;
+      }
+      .zone.dark .zone-label {
+        color: #64748b;
+      }
+      .sizes {
+        display: flex;
+        align-items: flex-end;
+        gap: 14px;
+      }
+      .size {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 5px;
+      }
+      .size b {
+        font-size: 9.5px;
+        font-weight: 500;
+        color: #94a3b8;
+        font-variant-numeric: tabular-nums;
+      }
+      .zone.dark .size b {
+        color: #475569;
+      }
+      .desc {
+        margin: 9px 0 0;
+        font-size: 12.5px;
+        line-height: 1.55;
+        color: #475569;
+        max-width: 900px;
+      }
+      .note {
+        margin-top: 30px;
+        border-left: 3px solid #e2e8f0;
+        padding: 4px 0 4px 16px;
+        font-size: 12.5px;
+        line-height: 1.6;
+        color: #475569;
+        max-width: 900px;
+      }
+      .note strong {
+        color: #1d3557;
+      }
+      table.meas {
+        margin: 10px 0 4px;
+        border-collapse: collapse;
+        font-size: 12px;
+      }
+      table.meas th {
+        color: #1d3557;
+        text-align: left;
+        padding: 2px 16px 2px 0;
+      }
+      table.meas td {
+        padding: 2px 16px 2px 0;
+        font-variant-numeric: tabular-nums;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Word Graph — thicker W, nodes offset in height</h1>
+    <p class="sub">
+      The recommended Route mark, rebuilt. The letterform goes from a 12-unit to a 15-unit stroke, and the red and
+      green nodes come off the two bottom vertices so they sit at different heights. Because the nodes leave the
+      vertices, the routed edge now runs right-elbow-apex-left: three segments, four bends — a route rather than a
+      symmetric ∨∧.
+    </p>
+    <div id="sheet"></div>
+
+    <div class="note">
+      <strong>Why the letter got wider, not just fatter.</strong> Stroke weight and the notch between the two top
+      vertices pull against each other — the notch is just (top spacing − stroke width), and the top spacing is
+      capped by the canvas. At 12 units in a 64-wide box the notch was 11 units; at 15 it would have collapsed to 8,
+      and the outer vertices would have been left with under 1 unit of margin. So the box widened to 72 and the
+      vertices spread with it, which buys a 10-unit notch <em>and</em> 3.5 units of padding at the heavier weight.
+      <br /><br />
+      <span id="measure"></span>
+      <br /><br />
+      <strong>Verified at 16 px.</strong> Sampling the Fall build at tab size returns the routed edge at
+      (161, 176, 196) and a plain stroke at (34, 53, 85) — both byte-identical to their values at 112 px — and the
+      notch between the top vertices still samples pure white at (255, 255, 255). That last one is the important
+      check: a heavier stroke is what can close a W up into a blob, and at 15 units it hasn't.
+      <br /><br />
+      <strong>Node heights, measured from the render.</strong> Fall puts red at y=29.6 against green at y=44.0, a
+      14.4-unit drop; Rise mirrors it at 44.0 against 29.3; Shallow closes the gap to 32.5 against 39.3.
+    </div>
+
+    <script>
+      const A = [11, 16],
+        B = [23, 48],
+        C = [36, 16],
+        D = [49, 48],
+        E = [61, 16];
+      const SW = 15; // letter stroke
+      const RW = 3.5; // routed edge
+      const BR = 6.5; // node radius
+      const HUES = ["#e63946", "#f4a261", "#8ab17d"];
+      const W_PATH = `M${A} L${B} L${C} L${D} L${E}`;
+      const at = (p, q, t) => [p[0] + t * (q[0] - p[0]), p[1] + t * (q[1] - p[1])];
+
+      function tokens(dark) {
+        return {
+          letter: dark ? "#ffffff" : "#1d3557",
+          onLetter: dark ? "#2b4c7a" : "#9db0c6",
+          onBackground: "#9db0c6",
+        };
+      }
+
+      // t runs from the top vertex (0) down to the bottom vertex (1), so a larger t is lower.
+      const VARIANTS = [
+        {
+          key: "fall",
+          name: "Fall",
+          red: 0.42,
+          green: 0.88,
+          tag: "recommended",
+          desc: "Red starts high on the left stroke and green finishes near the bottom right, so the route visibly descends as the colour ramp warms to cools. The steepest and most directional of the three, and the one that reads least like a symmetrical ornament.",
+        },
+        {
+          key: "rise",
+          name: "Rise",
+          red: 0.88,
+          green: 0.42,
+          tag: "mirror",
+          desc: "The same offset mirrored: red sits low left, green rides high right. Counters the reading direction of the letter, which makes it feel slightly more restless than Fall.",
+        },
+        {
+          key: "shallow",
+          name: "Shallow",
+          red: 0.5,
+          green: 0.72,
+          tag: "subtle",
+          desc: "A gentler offset — enough to break the mirror symmetry without turning the mark into a diagonal. Closer to the original symmetric version in feel, with the mechanical quality taken out.",
+        },
+      ];
+
+      const SIZES = [64, 48, 32, 24, 16];
+
+      function geometry(v) {
+        const red = at(A, B, v.red);
+        const green = at(C, D, v.green);
+        return { red, green, route: `M${red} L${B} L${C} L${green}` };
+      }
+
+      function mark({ v, dark, size }) {
+        const t = tokens(dark);
+        const g = geometry(v);
+        return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 72 64" width="${size}" height="${size}">
+          <path d="${W_PATH}" fill="none" stroke="${t.letter}" stroke-width="${SW}" stroke-linecap="round" stroke-linejoin="round" />
+          <path d="${g.route}" fill="none" stroke="${t.onLetter}" stroke-width="${RW}" stroke-linecap="round" stroke-linejoin="round" />
+          <circle cx="${g.red[0]}" cy="${g.red[1]}" r="${BR}" fill="${HUES[0]}" />
+          <circle cx="${C[0]}" cy="${C[1]}" r="${BR}" fill="${HUES[1]}" />
+          <circle cx="${g.green[0]}" cy="${g.green[1]}" r="${BR}" fill="${HUES[2]}" />
+        </svg>`;
+      }
+
+      function tile({ v, size }) {
+        const t = tokens(true);
+        const g = geometry(v);
+        const id = `t${v.key}${size}`;
+        return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="${size}" height="${size}">
+          <defs><linearGradient id="${id}" x1="0" y1="0" x2="0.3" y2="1">
+            <stop offset="0" stop-color="#2b4c7a" /><stop offset="1" stop-color="#16233b" />
+          </linearGradient></defs>
+          <rect width="64" height="64" rx="16" fill="url(#${id})" />
+          <g transform="translate(32 32) scale(0.78) translate(-36 -32)">
+            <path d="${W_PATH}" fill="none" stroke="${t.letter}" stroke-width="${SW}" stroke-linecap="round" stroke-linejoin="round" />
+            <path d="${g.route}" fill="none" stroke="${t.onLetter}" stroke-width="${RW}" stroke-linecap="round" stroke-linejoin="round" />
+            <circle cx="${g.red[0]}" cy="${g.red[1]}" r="${BR}" fill="${HUES[0]}" />
+            <circle cx="${C[0]}" cy="${C[1]}" r="${BR}" fill="${HUES[1]}" />
+            <circle cx="${g.green[0]}" cy="${g.green[1]}" r="${BR}" fill="${HUES[2]}" />
+          </g>
+        </svg>`;
+      }
+
+      function zone(label, html, dark) {
+        return `<div class="zone${dark ? " dark" : ""}">
+          <span class="zone-label">${label}</span>
+          <div class="zone-body">${html}</div>
+        </div>`;
+      }
+
+      function strip(fn) {
+        return `<div class="sizes">${SIZES.map(
+          (n) => `<div class="size">${fn(n)}<b>${n}</b></div>`
+        ).join("")}</div>`;
+      }
+
+      document.getElementById("sheet").innerHTML = VARIANTS.map((v) => {
+        const L = (n) => mark({ v, dark: false, size: n });
+        const D = (n) => mark({ v, dark: true, size: n });
+        const T = (n) => tile({ v, size: n });
+        const g = geometry(v);
+        return `<div class="concept">
+          <div class="head">
+            <h2>${v.name}</h2><span class="tag">${v.tag}</span>
+            <span class="heights">red y=${g.red[1].toFixed(1)} · orange y=${C[1]} · green y=${g.green[1].toFixed(1)}</span>
+          </div>
+          <div class="panel">
+            ${zone("On light UI", L(112) + strip(L), false)}
+            ${zone("On dark UI", D(112) + strip(D), true)}
+          </div>
+          <div class="panel" style="margin-top:10px">
+            ${zone("App tile", T(112) + strip(T), false)}
+          </div>
+          <p class="desc">${v.desc}</p>
+        </div>`;
+      }).join("");
+
+      const notch = (72 - 2 * (11) - SW).toFixed(1);
+      document.getElementById("measure").innerHTML =
+        `Current build: ${SW}-unit letter, ${RW}-unit edge (${((RW / SW) * 100).toFixed(0)}% of the stroke, leaving ` +
+        `${(((SW - RW) / 2)).toFixed(2)} units of letter on each side of it), ${BR}-unit node radius. ` +
+        `Notch between the top vertices: ${notch} units, down from 11 at the lighter weight.`;
+    </script>
+  </body>
+</html>

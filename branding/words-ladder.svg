@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" width="96" height="96" role="img" aria-label="Word Graph">
+  <title>Word Graph — word tiles (cat / cot)</title>
+  <g fill="#1d3557">
+    <rect x="15" y="24" width="20" height="20" rx="5.5" />
+    <rect x="61" y="24" width="20" height="20" rx="5.5" />
+    <rect x="15" y="52" width="20" height="20" rx="5.5" />
+    <rect x="61" y="52" width="20" height="20" rx="5.5" />
+  </g>
+  <g fill="#e63946">
+    <rect x="38" y="24" width="20" height="20" rx="5.5" />
+    <rect x="38" y="52" width="20" height="20" rx="5.5" />
+  </g>
+  <g fill="#ffffff" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif" font-size="13.5" font-weight="700" text-anchor="middle">
+    <text x="25" y="38.5">c</text>
+    <text x="48" y="38.5">a</text>
+    <text x="71" y="38.5">t</text>
+    <text x="25" y="66.5">c</text>
+    <text x="48" y="66.5">o</text>
+    <text x="71" y="66.5">t</text>
+  </g>
+</svg>

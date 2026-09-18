@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Word Graph — word-bearing marks</title>
+    <style>
+      :root {
+        font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+        color: #1d3557;
+      }
+      body {
+        margin: 0;
+        padding: 36px 44px 56px;
+        background: #f8fafc;
+        width: 1120px;
+        box-sizing: border-box;
+      }
+      h1 {
+        margin: 0 0 6px;
+        font-size: 24px;
+        letter-spacing: -0.02em;
+      }
+      .sub {
+        margin: 0 0 32px;
+        color: #64748b;
+        font-size: 13.5px;
+        line-height: 1.55;
+        max-width: 800px;
+      }
+      .concept {
+        margin-bottom: 28px;
+      }
+      .head {
+        display: flex;
+        align-items: baseline;
+        gap: 10px;
+        margin-bottom: 10px;
+      }
+      .head h2 {
+        margin: 0;
+        font-size: 15.5px;
+      }
+      .head .tag {
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #0f766e;
+        background: #ccfbf1;
+        padding: 2px 7px;
+        border-radius: 99px;
+      }
+      .head .tag.warn {
+        color: #9a3412;
+        background: #ffedd5;
+      }
+      .panel {
+        border-radius: 14px;
+        border: 1px solid #e2e8f0;
+        background: #fff;
+        padding: 16px 18px;
+        display: flex;
+        gap: 30px;
+        align-items: center;
+      }
+      .zone {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .zone-label {
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #94a3b8;
+      }
+      .zone-body {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+      }
+      .zone.dark {
+        background: #0f172a;
+        border-radius: 10px;
+        padding: 12px 14px;
+      }
+      .zone.dark .zone-label {
+        color: #64748b;
+      }
+      .big {
+        height: 92px;
+        display: block;
+      }
+      .sizes {
+        display: flex;
+        align-items: flex-end;
+        gap: 14px;
+      }
+      .size {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 5px;
+      }
+      .size b {
+        font-size: 9.5px;
+        font-weight: 500;
+        color: #94a3b8;
+        font-variant-numeric: tabular-nums;
+      }
+      .zone.dark .size b {
+        color: #475569;
+      }
+      .desc {
+        margin: 9px 0 0;
+        font-size: 12.5px;
+        line-height: 1.55;
+        color: #475569;
+        max-width: 900px;
+      }
+      .desc code {
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 11.5px;
+        color: #64748b;
+      }
+      .note {
+        margin-top: 34px;
+        border-left: 3px solid #e2e8f0;
+        padding: 4px 0 4px 16px;
+        font-size: 12.5px;
+        line-height: 1.6;
+        color: #475569;
+        max-width: 900px;
+      }
+      .note strong {
+        color: #1d3557;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Word Graph — marks that contain words</h1>
+    <p class="sub">
+      Two ways to put the actual vocabulary into the identity. Both are self-explanatory at header size and
+      both fall apart at tab size — which is why each pairs with a letter-free or single-letter companion.
+    </p>
+    <div id="sheet"></div>
+
+    <div class="note">
+      <strong>The constraint.</strong> A three-letter run needs roughly 40 px of mark width before the glyphs
+      stop being smudges, and a browser tab gives you 16. So "words in the logo" and "legible favicon" can't be
+      the same asset. The usual resolution: a word-bearing mark for the app header, README, and social card, plus
+      a letter-free icon at 16–32 px. <strong>W</strong> works as that companion because a monogram carries the
+      brand name, where an abstract mark has to be learned (cf. the earlier chain/hub/ladder set).
+    </div>
+
+    <script>
+      const WORD_MARKS = [
+        {
+          name: "Word tiles",
+          files: { light: "words-ladder.svg", dark: "words-ladder-inverse.svg" },
+          big: 92,
+          sizes: [64, 48, 32, 16],
+          tag: "recommended",
+          desc: "The two words of a single change, stacked as letter tiles with the changed position in red — cat to cot. This is the earlier Ladder concept with the letters put back in, which is what makes it legible as an idea. At 32 px and below the glyphs muddy but the shape survives as six blocks with a red column.",
+        },
+        {
+          name: "Word chain",
+          files: { light: "words-chain.svg", dark: "words-chain-inverse.svg" },
+          big: 64,
+          sizes: [176, 120, 88],
+          tag: "header only",
+          tagClass: "warn",
+          desc: "Three whole words as graph nodes joined by edges, each changed letter red — cat, cot, cog. The most explicit statement of the whole model, and the best README banner. Landscape only: at 88 px the letters are already going soft, so it is not an icon candidate.",
+        },
+        {
+          name: "W monogram",
+          files: { light: "mark-w.svg", dark: "mark-w-inverse.svg" },
+          big: 92,
+          sizes: [64, 48, 32, 16],
+          tag: "small-size companion",
+          desc: "The initial drawn as a walk through the graph: four strokes, the last vertex a red node. Font-free, so it renders identically everywhere. At 16 px it is simply a bold W with a red tip — which is exactly what a tab icon needs. Shown here with its navy app tile as <code>app-icon-w.svg</code>.",
+        },
+      ];
+
+      function zone(label, src, sizes, big, dark) {
+        return `<div class="zone${dark ? " dark" : ""}">
+          <span class="zone-label">${label}</span>
+          <div class="zone-body">
+            <img class="big" src="${src}" style="height:${big}px" alt="" />
+            <div class="sizes">
+              ${sizes
+                .map(
+                  (n) =>
+                    `<div class="size"><img src="${src}" width="${n}" height="${n}" alt="" /><b>${n}</b></div>`
+                )
+                .join("")}
+            </div>
+          </div>
+        </div>`;
+      }
+
+      document.getElementById("sheet").innerHTML = WORD_MARKS.map((c) => {
+        const tile = c.name === "W monogram" ? "app-icon-w.svg" : null;
+        return `<div class="concept">
+          <div class="head">
+            <h2>${c.name}</h2>
+            <span class="tag ${c.tagClass || ""}">${c.tag}</span>
+          </div>
+          <div class="panel">
+            ${zone("On light UI", c.files.light, c.sizes, c.big, false)}
+            ${zone("On dark UI", c.files.dark, c.sizes, c.big, true)}
+          </div>
+          ${
+            tile
+              ? `<div class="panel" style="margin-top:10px">
+                   ${zone("App icon · light UI", tile, [64, 48, 32, 16], 92, false)}
+                   ${zone("App icon · dark UI", tile, [64, 48, 32, 16], 92, true)}
+                 </div>`
+              : ""
+          }
+          <p class="desc">${c.desc} &nbsp;<code>${c.files.light}</code> · <code>${c.files.dark}</code></p>
+        </div>`;
+      }).join("");
+    </script>
+  </body>
+</html>

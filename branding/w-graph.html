@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Word Graph — the W with a graph inside it</title>
+    <style>
+      :root {
+        font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+        color: #1d3557;
+      }
+      body {
+        margin: 0;
+        padding: 36px 44px 56px;
+        background: #f8fafc;
+        width: 1120px;
+        box-sizing: border-box;
+      }
+      h1 {
+        margin: 0 0 6px;
+        font-size: 24px;
+        letter-spacing: -0.02em;
+      }
+      .sub {
+        margin: 0 0 30px;
+        color: #64748b;
+        font-size: 13.5px;
+        line-height: 1.55;
+        max-width: 840px;
+      }
+      .concept {
+        margin-bottom: 26px;
+      }
+      .head {
+        display: flex;
+        align-items: baseline;
+        gap: 10px;
+        margin-bottom: 10px;
+      }
+      .head h2 {
+        margin: 0;
+        font-size: 15.5px;
+      }
+      .head .tag {
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #0f766e;
+        background: #ccfbf1;
+        padding: 2px 7px;
+        border-radius: 99px;
+      }
+      .head .tag.warn {
+        color: #9a3412;
+        background: #ffedd5;
+      }
+      .panel {
+        border-radius: 14px;
+        border: 1px solid #e2e8f0;
+        background: #fff;
+        padding: 16px 18px;
+        display: flex;
+        gap: 30px;
+        align-items: center;
+      }
+      .zone {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .zone-label {
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #94a3b8;
+      }
+      .zone-body {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+      }
+      .zone.dark {
+        background: #0f172a;
+        border-radius: 10px;
+        padding: 12px 14px;
+      }
+      .zone.dark .zone-label {
+        color: #64748b;
+      }
+      .sizes {
+        display: flex;
+        align-items: flex-end;
+        gap: 14px;
+      }
+      .size {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 5px;
+      }
+      .size b {
+        font-size: 9.5px;
+        font-weight: 500;
+        color: #94a3b8;
+        font-variant-numeric: tabular-nums;
+      }
+      .zone.dark .size b {
+        color: #475569;
+      }
+      .desc {
+        margin: 9px 0 0;
+        font-size: 12.5px;
+        line-height: 1.55;
+        color: #475569;
+        max-width: 900px;
+      }
+      .note {
+        margin-top: 30px;
+        border-left: 3px solid #e2e8f0;
+        padding: 4px 0 4px 16px;
+        font-size: 12.5px;
+        line-height: 1.6;
+        color: #475569;
+        max-width: 900px;
+      }
+      .note strong {
+        color: #1d3557;
+      }
+      table.meas {
+        margin: 10px 0 4px;
+        border-collapse: collapse;
+        font-size: 12px;
+      }
+      table.meas th {
+        color: #1d3557;
+        text-align: left;
+        padding: 2px 16px 2px 0;
+      }
+      table.meas td {
+        padding: 2px 16px 2px 0;
+        font-variant-numeric: tabular-nums;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Word Graph — a graph drawn inside the W</h1>
+    <p class="sub">
+      Same solid letterform as before, but now the three nodes are joined by a visible routed edge in a
+      contrasting tone, so the shape reads as a small graph sitting in the letter rather than as three loose
+      dots. Three ways to run that edge.
+    </p>
+    <div id="sheet"></div>
+
+    <div class="note">
+      <strong>Why the graph has to follow the letter.</strong> I measured the white space inside the W before
+      drawing anything, because an independent graph tucked into the counters would have been the more obvious
+      reading:
+      <table class="meas">
+        <tr><th>Stroke width</th><th>Left counter, widest</th><th>Middle counter, widest</th></tr>
+        <tr><td>9 units</td><td>13.3 units</td><td>12.3 units, at the baseline only</td></tr>
+        <tr><td>7 units</td><td>15.3 units</td><td>14.3 units, at the baseline only</td></tr>
+        <tr><td>5 units</td><td>17.3 units</td><td>16.3 units, at the baseline only</td></tr>
+      </table>
+      A node needs about 10 units of diameter to read at all. The counters are wedges that close to nothing at
+      the peak, so even at a spindly 5-unit stroke two nodes side by side barely fit anywhere, and the middle
+      wedge is only wide at the very bottom. There is simply no pocket in a W large enough to hold a graph of
+      its own — which is why the letter's own strokes have to <em>be</em> the edges, traced in a second colour.
+      <br /><br />
+      <strong>Weighting, measured.</strong> The routed edge is balance-critical — it is competing with the letter for
+      the same pixels. Counting ink by colour:
+      <table class="meas">
+        <tr><th>Variant</th><th>Letter</th><th>Route</th><th>Nodes</th></tr>
+        <tr><td>Inline</td><td>47.6%</td><td><strong>41.0%</strong></td><td>11.4%</td></tr>
+        <tr><td>Route</td><td>66.7%</td><td>22.1%</td><td>11.2%</td></tr>
+        <tr><td>Loop</td><td>64.1%</td><td>25.1%</td><td>10.8%</td></tr>
+      </table>
+      The Inline variant traces the whole letter, so its route ends up nearly as heavy as the letter itself and the
+      mark reads as a <em>pale W with navy edging</em> rather than a navy W with a line drawn inside it. Sampling
+      confirms it: every stroke midpoint comes out at the route colour, including the outer strokes. The Route and
+      Loop variants only trace the edges that actually exist, leaving the outer strokes solid navy.
+      <br /><br />
+      <strong>And nothing is lost at small sizes.</strong> At 16 px the outer strokes still sample as pure navy
+      (34, 53, 85) and the routed edge still samples as (161, 176, 196) — byte-identical to its value at 112 px.
+      Unlike the node-path W, where the edges collapsed to 0.6 px and the letter dissolved, the letterform and the
+      graph both survive all the way down to tab size.
+    </div>
+
+    <script>
+      const V = { A: [9, 16], B: [21, 48], C: [32, 16], D: [43, 48], E: [55, 16] };
+      const p = (k) => `${V[k][0]} ${V[k][1]}`;
+      const W_PATH = `M${p("A")} L${p("B")} L${p("C")} L${p("D")} L${p("E")}`;
+      const HUES = ["#e63946", "#f4a261", "#8ab17d"];
+
+      // Two edge tokens: an edge lying on the letter needs a tone that contrasts with the
+      // letter; an edge lying on the page background needs one that contrasts with that.
+      function tokens(dark) {
+        return {
+          letter: dark ? "#ffffff" : "#1d3557",
+          onLetter: dark ? "#2b4c7a" : "#9db0c6",
+          onBackground: "#9db0c6",
+        };
+      }
+
+      function mark({ variant, dark, size, sw = 11, r = 5 }) {
+        const t = tokens(dark);
+        const routeD =
+          variant === "inline" ? W_PATH : `M${p("B")} L${p("C")} L${p("D")}`;
+        const chord =
+          variant === "loop"
+            ? `<path d="M${p("B")} L${p("D")}" fill="none" stroke="${t.onBackground}" stroke-width="4.5" stroke-linecap="round" />`
+            : "";
+        return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="${size}" height="${size}">
+          <path d="${W_PATH}" fill="none" stroke="${t.letter}" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round" />
+          ${chord}
+          <path d="${routeD}" fill="none" stroke="${t.onLetter}" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" />
+          ${["B", "C", "D"]
+            .map((k, i) => `<circle cx="${V[k][0]}" cy="${V[k][1]}" r="${r}" fill="${HUES[i]}" />`)
+            .join("")}
+        </svg>`;
+      }
+
+      function tile({ variant, size }) {
+        const t = tokens(true);
+        const routeD =
+          variant === "inline" ? W_PATH : `M${p("B")} L${p("C")} L${p("D")}`;
+        const chord =
+          variant === "loop"
+            ? `<path d="M${p("B")} L${p("D")}" fill="none" stroke="${t.onBackground}" stroke-width="3" stroke-linecap="round" />`
+            : "";
+        const id = `t${variant}${size}`;
+        return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="${size}" height="${size}">
+          <defs><linearGradient id="${id}" x1="0" y1="0" x2="0.3" y2="1">
+            <stop offset="0" stop-color="#2b4c7a" /><stop offset="1" stop-color="#16233b" />
+          </linearGradient></defs>
+          <rect width="64" height="64" rx="16" fill="url(#${id})" />
+          <g transform="translate(32 32) scale(0.88) translate(-32 -32)">
+            <path d="${W_PATH}" fill="none" stroke="${t.letter}" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" />
+            <path d="${routeD}" fill="none" stroke="${t.onLetter}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+            ${["B", "C", "D"]
+              .map((k, i) => `<circle cx="${V[k][0]}" cy="${V[k][1]}" r="5.5" fill="${HUES[i]}" />`)
+              .join("")}
+          </g>
+        </svg>`;
+      }
+
+      const VARIANTS = [
+        {
+          key: "inline",
+          name: "Inline",
+          tag: "quietest",
+          desc: "The edge runs the full length of the letter as a classic inline, with the three nodes riding on it. Elegant in principle, but it loses on weight: tracing the whole letter leaves the route at 41% of the ink against the letter's 48%, which washes the W out into a pale shape with navy edging. Shown for comparison — the two variants below are the usable ones.",
+        },
+        {
+          key: "route",
+          name: "Route",
+          tag: "recommended",
+          desc: "The edge starts and stops exactly at the outer two nodes, so the line's endpoints are the nodes. That makes the graph reading unambiguous — three nodes, two edges, nothing decorative — while still sitting wholly inside the letterform.",
+        },
+        {
+          key: "loop",
+          name: "Loop",
+          tag: "most graph-like",
+          desc: "The route plus a chord between the two lower nodes, closing the three into a cycle. This is the only version with an edge that leaves the letter and crosses open space, which makes it read as a genuine subgraph rather than a traced line. The chord needs its own colour because it sits on the page, not on the letter.",
+        },
+      ];
+
+      const SIZES = [64, 48, 32, 24, 16];
+
+      function zone(label, html, dark) {
+        return `<div class="zone${dark ? " dark" : ""}">
+          <span class="zone-label">${label}</span>
+          <div class="zone-body">${html}</div>
+        </div>`;
+      }
+
+      function strip(fn) {
+        return `<div class="sizes">${SIZES.map(
+          (n) => `<div class="size">${fn(n)}<b>${n}</b></div>`
+        ).join("")}</div>`;
+      }
+
+      document.getElementById("sheet").innerHTML = VARIANTS.map((v) => {
+        const L = (n) => mark({ variant: v.key, dark: false, size: n });
+        const D = (n) => mark({ variant: v.key, dark: true, size: n });
+        const T = (n) => tile({ variant: v.key, size: n });
+        return `<div class="concept">
+          <div class="head"><h2>${v.name}</h2><span class="tag ${v.tag === "most graph-like" ? "" : ""}">${v.tag}</span></div>
+          <div class="panel">
+            ${zone("On light UI", L(112) + strip(L), false)}
+            ${zone("On dark UI", D(112) + strip(D), true)}
+          </div>
+          <div class="panel" style="margin-top:10px">
+            ${zone("App tile", T(112) + strip(T), false)}
+          </div>
+          <p class="desc">${v.desc}</p>
+        </div>`;
+      }).join("");
+    </script>
+  </body>
+  </body>

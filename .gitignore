@@ -16,3 +16,6 @@ web/dist/
 .env
 .env.*
 !.env.example
+
+# Regenerable logo preview captures (see branding/)
+branding/preview*.png

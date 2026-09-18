@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 72 72" width="72" height="72" role="img" aria-label="Word Graph">
+  <title>Word Graph</title>
+  <!-- Letterform: A B C D E, 15-unit stroke, 10-unit notch between the top vertices. -->
+  <path d="M11 20 L23 52 L36 20 L49 52 L61 20" fill="none" stroke="#1d3557" stroke-width="15" stroke-linecap="round" stroke-linejoin="round" />
+  <!-- Routed edge: red node -> left elbow -> apex -> green node. Only the edges that
+       exist are traced, so the outer strokes stay solid. -->
+  <path d="M17 36 L23 52 L36 20 L45.4 43" fill="none" stroke="#9db0c6" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" />
+  <!-- Nodes: the app's own BFS distance ramp. Red sits 7 units above green. -->
+  <circle cx="17" cy="36" r="6.5" fill="#e63946" />
+  <circle cx="36" cy="20" r="6.5" fill="#f4a261" />
+  <circle cx="45.4" cy="43" r="6.5" fill="#8ab17d" />
+</svg>

@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Word Graph — balls inside the W</title>
+    <style>
+      :root {
+        font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+        color: #1d3557;
+      }
+      body {
+        margin: 0;
+        padding: 36px 44px 56px;
+        background: #f8fafc;
+        width: 1120px;
+        box-sizing: border-box;
+      }
+      h1 {
+        margin: 0 0 6px;
+        font-size: 24px;
+        letter-spacing: -0.02em;
+      }
+      .sub {
+        margin: 0 0 30px;
+        color: #64748b;
+        font-size: 13.5px;
+        line-height: 1.55;
+        max-width: 830px;
+      }
+      .concept {
+        margin-bottom: 26px;
+      }
+      .head {
+        display: flex;
+        align-items: baseline;
+        gap: 10px;
+        margin-bottom: 10px;
+      }
+      .head h2 {
+        margin: 0;
+        font-size: 15.5px;
+      }
+      .head .tag {
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #0f766e;
+        background: #ccfbf1;
+        padding: 2px 7px;
+        border-radius: 99px;
+      }
+      .head .tag.warn {
+        color: #9a3412;
+        background: #ffedd5;
+      }
+      .panel {
+        border-radius: 14px;
+        border: 1px solid #e2e8f0;
+        background: #fff;
+        padding: 16px 18px;
+        display: flex;
+        gap: 30px;
+        align-items: center;
+      }
+      .zone {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .zone-label {
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #94a3b8;
+      }
+      .zone-body {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+      }
+      .zone.dark {
+        background: #0f172a;
+        border-radius: 10px;
+        padding: 12px 14px;
+      }
+      .zone.dark .zone-label {
+        color: #64748b;
+      }
+      .sizes {
+        display: flex;
+        align-items: flex-end;
+        gap: 14px;
+      }
+      .size {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 5px;
+      }
+      .size b {
+        font-size: 9.5px;
+        font-weight: 500;
+        color: #94a3b8;
+        font-variant-numeric: tabular-nums;
+      }
+      .zone.dark .size b {
+        color: #475569;
+      }
+      .desc {
+        margin: 9px 0 0;
+        font-size: 12.5px;
+        line-height: 1.55;
+        color: #475569;
+        max-width: 900px;
+      }
+      .note {
+        margin-top: 30px;
+        border-left: 3px solid #e2e8f0;
+        padding: 4px 0 4px 16px;
+        font-size: 12.5px;
+        line-height: 1.6;
+        color: #475569;
+        max-width: 900px;
+      }
+      .note strong {
+        color: #1d3557;
+      }
+      table.meas {
+        margin: 10px 0 4px;
+        border-collapse: collapse;
+        font-size: 12px;
+      }
+      table.meas th {
+        color: #1d3557;
+        text-align: left;
+        padding: 2px 16px 2px 0;
+      }
+      table.meas td {
+        padding: 2px 16px 2px 0;
+        font-variant-numeric: tabular-nums;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Word Graph — balls set inside the W</h1>
+    <p class="sub">
+      The W stays a solid letterform, so it survives shrinking. Three smaller balls sit inside its strokes as
+      coloured joints, and the letter itself is what connects them — no extra edges needed. Fewer nodes (three,
+      not five), and the alphabet still wins.
+    </p>
+    <div id="sheet"></div>
+
+    <div class="note">
+      <strong>Why this fixes the previous version — measured, not assumed.</strong> At 16 px the strokes are 2.3 px
+      wide and each ball 2.0 px across, so the letterform stays one unbroken mass. Sampling the rendered pixels at
+      the ball centres gives:
+      <table class="meas">
+        <tr><th>Node</th><th>Target</th><th>Measured at 16 px</th><th>Drift</th></tr>
+        <tr><td>B · red</td><td>230, 57, 70</td><td>213, 73, 76</td><td>muted</td></tr>
+        <tr><td>C · orange</td><td>244, 162, 97</td><td>233, 165, 108</td><td>1%</td></tr>
+        <tr><td>D · sage</td><td>138, 177, 125</td><td>146, 175, 130</td><td>3%</td></tr>
+      </table>
+      All three hues survive — only the red loses saturation to antialiasing. I expected the ramp to be lost at this
+      size and it isn't: three well-separated hues on a solid stroke still read as three colours, which is the
+      opposite of the node-path W where the 2.5-unit edges rasterised to 0.6 px and the letter dissolved entirely.
+      This variant therefore holds up at <em>every</em> size, header through favicon, which none of the earlier
+      marks managed.
+    </div>
+
+    <script>
+      const V = { A: [9, 16], B: [21, 48], C: [32, 16], D: [43, 48], E: [55, 16] };
+      const W_PATH = "M9 16 L21 48 L32 16 L43 48 L55 16";
+      const HUES = ["#e63946", "#f4a261", "#8ab17d"];
+
+      function mark({ stroke, nodes, r, size, sw = 9 }) {
+        return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="${size}" height="${size}">
+          <path d="${W_PATH}" fill="none" stroke="${stroke}" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round" />
+          ${nodes
+            .map((k, i) => {
+              const [x, y] = V[k];
+              return `<circle cx="${x}" cy="${y}" r="${r}" fill="${HUES[i]}" />`;
+            })
+            .join("")}
+        </svg>`;
+      }
+
+      function tile({ stroke, nodes, r, size, sw = 9 }) {
+        const id = `g${nodes.join("")}${size}`;
+        return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="${size}" height="${size}">
+          <defs><linearGradient id="${id}" x1="0" y1="0" x2="0.3" y2="1">
+            <stop offset="0" stop-color="#2b4c7a" /><stop offset="1" stop-color="#16233b" />
+          </linearGradient></defs>
+          <rect width="64" height="64" rx="16" fill="url(#${id})" />
+          <g transform="translate(32 32) scale(0.88) translate(-32 -32)">
+            <path d="${W_PATH}" fill="none" stroke="${stroke}" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round" />
+            ${nodes
+              .map((k, i) => {
+                const [x, y] = V[k];
+                return `<circle cx="${x}" cy="${y}" r="${r}" fill="${HUES[i]}" />`;
+              })
+              .join("")}
+          </g>
+        </svg>`;
+      }
+
+      const VARIANTS = [
+        {
+          name: "Middle arc",
+          nodes: ["B", "C", "D"],
+          tag: "connected by the letter",
+          desc: "Balls on the valley, the middle peak and the far valley. The two strokes they sit on are real edges, so the three nodes are a genuine connected path — red to orange to sage — and the outer strokes stay plain, which keeps the W from looking symmetrical and mechanical.",
+        },
+        {
+          name: "Top trio",
+          nodes: ["A", "C", "E"],
+          tag: "reads as a crown",
+          desc: "The three peaks. Visually the calmest option and the most obviously 'three of something', but the three balls are not adjacent along the path — you have to travel through the valleys to get between them, so 'connected' is implied rather than true.",
+        },
+        {
+          name: "Left elbow",
+          nodes: ["A", "B", "C"],
+          tag: "most literal",
+          desc: "A plain connected three-node run — down, up — leaving the right half of the W unmarked. Unambiguous as a traversal, but the lopsided weighting makes the letter read slightly as a 'V' plus a leftover stroke at small sizes.",
+        },
+      ];
+
+      const SIZES = [64, 48, 32, 24, 16];
+
+      function zone(label, html, dark) {
+        return `<div class="zone${dark ? " dark" : ""}">
+          <span class="zone-label">${label}</span>
+          <div class="zone-body">${html}</div>
+        </div>`;
+      }
+
+      function strip(fn) {
+        return `<div class="sizes">${SIZES.map(
+          (n) => `<div class="size">${fn(n)}<b>${n}</b></div>`
+        ).join("")}</div>`;
+      }
+
+      document.getElementById("sheet").innerHTML = VARIANTS.map((v) => {
+        const mkLight = (n) => mark({ stroke: "#1d3557", nodes: v.nodes, r: 4, size: n, sw: 9 });
+        const mkDark = (n) => mark({ stroke: "#ffffff", nodes: v.nodes, r: 4, size: n, sw: 9 });
+        const tlL = (n) => tile({ stroke: "#ffffff", nodes: v.nodes, r: 4, size: n, sw: 9 });
+        const tlD = (n) => tile({ stroke: "#ffffff", nodes: v.nodes, r: 4, size: n, sw: 9 });
+        return `<div class="concept">
+          <div class="head"><h2>${v.name}</h2><span class="tag">${v.tag}</span></div>
+          <div class="panel">
+            ${zone("On light UI", mkLight(112) + strip(mkLight), false)}
+            ${zone("On dark UI", mkDark(112) + strip(mkDark), true)}
+          </div>
+          <div class="panel" style="margin-top:10px">
+            ${zone("App tile · light UI", tlL(112) + strip(tlL), false)}
+            ${zone("App tile · dark UI", tlD(112) + strip(tlD), true)}
+          </div>
+          <p class="desc">${v.desc}</p>
+        </div>`;
+      }).join("");
+    </script>
+  </body>
+</html>

@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Word Graph — logo options</title>
+    <style>
+      :root {
+        font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+        color: #1d3557;
+      }
+      body {
+        margin: 0;
+        padding: 36px 44px 56px;
+        background: #f8fafc;
+        width: 1120px;
+        box-sizing: border-box;
+      }
+      h1 {
+        margin: 0 0 6px;
+        font-size: 24px;
+        letter-spacing: -0.02em;
+      }
+      .sub {
+        margin: 0 0 34px;
+        color: #64748b;
+        font-size: 13.5px;
+        line-height: 1.55;
+        max-width: 760px;
+      }
+      .concept {
+        margin-bottom: 30px;
+      }
+      .head {
+        display: flex;
+        align-items: baseline;
+        gap: 10px;
+        margin-bottom: 10px;
+      }
+      .head h2 {
+        margin: 0;
+        font-size: 15.5px;
+      }
+      .head .pick {
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #0f766e;
+        background: #ccfbf1;
+        padding: 2px 7px;
+        border-radius: 99px;
+      }
+      .panel {
+        border-radius: 14px;
+        border: 1px solid #e2e8f0;
+        background: #fff;
+        padding: 16px 18px;
+        display: flex;
+        gap: 30px;
+        align-items: center;
+      }
+      .zone {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .zone-label {
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #94a3b8;
+      }
+      .zone-body {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+      }
+      .zone.dark {
+        background: #0f172a;
+        border-radius: 10px;
+        padding: 12px 14px;
+      }
+      .zone.dark .zone-label {
+        color: #64748b;
+      }
+      .big {
+        width: 72px;
+        height: 72px;
+        display: block;
+      }
+      .sizes {
+        display: flex;
+        align-items: flex-end;
+        gap: 13px;
+      }
+      .size {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 5px;
+      }
+      .size b {
+        font-size: 9.5px;
+        font-weight: 500;
+        color: #94a3b8;
+        font-variant-numeric: tabular-nums;
+      }
+      .zone.dark .size b {
+        color: #475569;
+      }
+      .desc {
+        margin: 9px 0 0;
+        font-size: 12.5px;
+        line-height: 1.55;
+        color: #475569;
+        max-width: 880px;
+      }
+      .desc code {
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 11.5px;
+        color: #64748b;
+      }
+      .rule {
+        height: 1px;
+        background: #e2e8f0;
+        margin: 40px 0 30px;
+      }
+      .lockup {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 14px;
+        padding: 20px 24px;
+        width: fit-content;
+      }
+      .lockup img {
+        width: 248px;
+        display: block;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Word Graph — logo options</h1>
+    <p class="sub">
+      Three concepts, each built as an <strong>app icon</strong> (a rounded navy tile, theme-proof — this is the
+      favicon / installed-app form) and as a bare <strong>mark</strong> with separate ink for light and dark
+      backgrounds. Shown large, then at real tab sizes 16 · 24 · 32 · 48 px.
+    </p>
+    <div id="sheet"></div>
+    <div class="rule"></div>
+    <div class="head"><h2>Wordmark lockup</h2></div>
+    <div class="lockup"><img src="lockup.svg" alt="word graph" /></div>
+    <p class="desc">For the README header, where a 24 px mark can't carry the meaning alone. Text is live system-ui — convert to outlines before shipping.</p>
+
+    <script>
+      const CONCEPTS = [
+        {
+          name: "Chain",
+          slug: "chain",
+          pick: true,
+          desc: "Three words in a row, each one letter change from the last — the word ladder itself. The red node is where a query ends, the blue one where it started. Reads as a clean diagonal at 16 px, and it's the only concept whose shape implies direction (a BFS radiating outward).",
+        },
+        {
+          name: "Hub",
+          slug: "hub",
+          pick: false,
+          desc: "One red root word with three of its one-letter neighbours radiating out — literally the app's Explore view. The most overtly graph-shaped of the three, but at 16 px the satellites crowd the root.",
+        },
+        {
+          name: "Ladder",
+          slug: "ladder",
+          pick: false,
+          desc: "Two same-length words stacked, one letter position changed. The most literal statement of the rule, but the blocky silhouette is the least distinctive — it reads as a generic grid at small sizes.",
+        },
+      ];
+
+      function zone(label, files, dark) {
+        return `<div class="zone${dark ? " dark" : ""}">
+          <span class="zone-label">${label}</span>
+          <div class="zone-body">
+            <img class="big" src="${files.big}" alt="" />
+            <div class="sizes">
+              ${[48, 32, 24, 16]
+                .map(
+                  (n) =>
+                    `<div class="size"><img src="${files[n]}" width="${n}" height="${n}" alt="" /><b>${n}</b></div>`
+                )
+                .join("")}
+            </div>
+          </div>
+        </div>`;
+      }
+
+      document.getElementById("sheet").innerHTML = CONCEPTS.map((c) => {
+        const icon = `app-icon-${c.slug}.svg`;
+        const mark = `mark-${c.slug}.svg`;
+        const markInv = `mark-${c.slug}-inverse.svg`;
+        const fav = Object.fromEntries([48, 32, 24, 16].map((n) => [n, icon]));
+        const favMark = Object.fromEntries([48, 32, 24, 16].map((n) => [n, mark]));
+        const favMarkInv = Object.fromEntries([48, 32, 24, 16].map((n) => [n, markInv]));
+        return `<div class="concept">
+          <div class="head">
+            <h2>${c.name}</h2>
+            ${c.pick ? '<span class="pick">recommended</span>' : ""}
+          </div>
+          <div class="panel">
+            ${zone("App icon · on light UI", { big: icon, ...fav }, false)}
+            ${zone("App icon · on dark UI", { big: icon, ...fav }, true)}
+          </div>
+          <div class="panel" style="margin-top:10px">
+            ${zone("Mark · on light UI", { big: mark, ...favMark }, false)}
+            ${zone("Mark · on dark UI", { big: markInv, ...favMarkInv }, true)}
+          </div>
+          <p class="desc">${c.desc} &nbsp;<code>app-icon-${c.slug}.svg</code> · <code>mark-${c.slug}.svg</code> · <code>mark-${c.slug}-inverse.svg</code></p>
+        </div>`;
+      }).join("");
+    </script>
+  </body>
+</html>

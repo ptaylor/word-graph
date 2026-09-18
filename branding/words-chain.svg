@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 176 64" width="176" height="64" role="img" aria-label="Word Graph">
+  <title>Word Graph — word chain (cat / cot / cog)</title>
+  <g stroke="#94a3b8" stroke-width="2.5" stroke-linecap="round">
+    <path d="M52 32 L63 32" />
+    <path d="M113 32 L124 32" />
+  </g>
+  <g fill="#dbe3ec">
+    <rect x="2" y="17" width="50" height="30" rx="15" />
+    <rect x="63" y="17" width="50" height="30" rx="15" />
+    <rect x="124" y="17" width="50" height="30" rx="15" />
+  </g>
+  <g font-family="system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif" font-size="16" font-weight="700" fill="#1d3557" text-anchor="middle" letter-spacing="0.4">
+    <text x="27" y="37.5">c<tspan fill="#e63946">a</tspan>t</text>
+    <text x="88" y="37.5">c<tspan fill="#e63946">ot</tspan></text>
+    <text x="149" y="37.5">co<tspan fill="#e63946">g</tspan></text>
+  </g>
+</svg>

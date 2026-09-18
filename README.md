@@ -23,6 +23,8 @@ choices, and open design questions.
   generates `graph/`, plus the `words-at-distance.mjs` CLI query.
 - [`web/`](web) — the Vite + Cytoscape.js visualization app that reads
   `graph/*.json` and renders it in the browser.
+- [`icons/`](icons/README.md) — the project logo, as SVG: marks for light and
+  dark backgrounds plus a self-backgrounded app icon.
 
 ## Building the graph
 

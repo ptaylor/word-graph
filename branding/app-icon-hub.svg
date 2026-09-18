@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="Word Graph">
+  <title>Word Graph</title>
+  <defs>
+    <linearGradient id="wgtile" x1="0" y1="0" x2="0.3" y2="1">
+      <stop offset="0" stop-color="#2b4c7a" />
+      <stop offset="1" stop-color="#16233b" />
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="16" fill="url(#wgtile)" />
+  <g transform="translate(32 32) scale(0.8) translate(-32 -32)" stroke-linecap="round">
+    <g stroke="rgba(255,255,255,0.45)" stroke-width="3.8">
+      <path d="M32 37.875 L32 14.375" />
+      <path d="M32 37.875 L52.35 49.625" />
+      <path d="M32 37.875 L11.65 49.625" />
+    </g>
+    <circle cx="32" cy="14.375" r="6.5" fill="#c7d8ea" />
+    <circle cx="52.35" cy="49.625" r="6.5" fill="#c7d8ea" />
+    <circle cx="11.65" cy="49.625" r="6.5" fill="#c7d8ea" />
+    <circle cx="32" cy="37.875" r="9.5" fill="#e63946" />
+  </g>
+</svg>
