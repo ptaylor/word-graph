@@ -85,16 +85,29 @@ function closeFind() {
   if (currentExplore) showPath(currentExplore.startIndex);
 }
 
+function ensureDistanceVisible(distance) {
+  const current = Number(distanceMaxSlider.value);
+  if (distance <= current) return;
+  distanceMaxSlider.value = String(distance);
+  updateDistanceLabel();
+  if (document.body.dataset.view === "graph" && wordInput.value.trim()) {
+    explore();
+  }
+}
+
 function applyFind(prefix) {
   if (!cy || !currentExplore) return;
   const wanted = prefix.toLowerCase();
   const matches = [];
+  for (const [index, distance] of currentExplore.allDistances) {
+    const word = currentExplore.data.words[index];
+    if (wanted === "" || word.startsWith(wanted)) {
+      matches.push({ word, distance, id: String(index) });
+    }
+  }
   cy.batch(() => {
     cy.nodes().forEach((node) => {
       const hit = wanted === "" || node.data("label").startsWith(wanted);
-      if (hit && wanted !== "") {
-        matches.push({ word: node.data("label"), distance: node.data("distance"), id: node.id() });
-      }
       node.toggleClass("dimmed", !hit);
     });
     cy.edges().forEach((edge) => {
@@ -117,7 +130,12 @@ function applyFind(prefix) {
   if (wanted === "") {
     showPath(currentExplore.startIndex);
   } else if (matches.length === 1) {
-    showPath(Number(matches[0].id));
+    const match = matches[0];
+    if (match.distance > Number(distanceMaxSlider.value)) {
+      ensureDistanceVisible(match.distance);
+      return;
+    }
+    showPath(Number(match.id));
   }
 }
 
@@ -166,6 +184,10 @@ function selectFindMatch(index) {
     item.setAttribute("aria-selected", String(i === findSelected));
     item.classList.toggle("is-selected", i === findSelected);
   });
+  if (match.distance > Number(distanceMaxSlider.value)) {
+    ensureDistanceVisible(match.distance);
+    return;
+  }
   showPath(Number(match.id));
 }
 
@@ -178,16 +200,24 @@ function walkToFind() {
     return;
   }
   const wanted = findInput.value.trim().toLowerCase();
-  if (!wanted || !cy) return;
-  const matches = cy.nodes().filter((node) => node.data("label").startsWith(wanted));
+  if (!wanted || !currentExplore) return;
+  const matches = [];
+  for (const [index, distance] of currentExplore.allDistances) {
+    const word = currentExplore.data.words[index];
+    if (word.startsWith(wanted)) matches.push({ word, distance, id: String(index) });
+  }
   if (matches.length === 0) return;
   let best = matches[0];
-  matches.forEach((node) => {
-    const closer = node.data("distance") < best.data("distance");
-    const tie = node.data("distance") === best.data("distance") && node.data("label") < best.data("label");
-    if (closer || tie) best = node;
+  matches.forEach((match) => {
+    const closer = match.distance < best.distance;
+    const tie = match.distance === best.distance && match.word < best.word;
+    if (closer || tie) best = match;
   });
-  showPath(Number(best.id()));
+  if (best.distance > Number(distanceMaxSlider.value)) {
+    ensureDistanceVisible(best.distance);
+    return;
+  }
+  showPath(Number(best.id));
 }
 
 function debounce(fn, delayMs) {
@@ -563,7 +593,7 @@ async function explore() {
     return;
   }
 
-  currentExplore = { data, startIndex };
+  currentExplore = { data, startIndex, allDistances: all };
   // Reveal the canvas before laying out: the layout measures the viewport.
   setView("graph");
   renderLegend(ringCounts);
