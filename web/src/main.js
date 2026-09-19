@@ -3,6 +3,9 @@ import { loadManifest, loadLength, bfsDistances, bfsPath } from "./graph.js";
 import { tierFor, buildStylesheet, colorForDistance, nodeDimensions, fontSizeFor, labelInkFor } from "./styling.js";
 
 const DEFAULT_MAX_DISTANCE = 4;
+// Few enough matches and the words themselves are the answer, so they are listed
+// under the bar. Above this the list would be longer than the graph it points at.
+const FIND_LIST_LIMIT = 20;
 
 const searchForm = document.getElementById("search-form");
 const wordInput = document.getElementById("word-input");
@@ -20,6 +23,7 @@ const findBar = document.getElementById("find-bar");
 const findInput = document.getElementById("find-input");
 const findCount = document.getElementById("find-count");
 const findClose = document.getElementById("find-close");
+const findResults = document.getElementById("find-results");
 const layoutButtons = [...document.querySelectorAll(".layout-option")];
 
 let cy = null;
@@ -27,6 +31,8 @@ let wordCountByLength = new Map();
 let currentExplore = null; // { data, startIndex } for the active search, used by path-on-click
 let layoutChoice = "rings";
 let activeLayout = null; // so a new render can stop one still animating
+let findMatches = []; // the current prefix's matches, nearest first
+let findSelected = 0; // which row the arrow keys are on
 
 function setStatus(message, tone) {
   status.textContent = message;
@@ -58,6 +64,7 @@ function openFind() {
   // The field only accepts words of the length this graph is made of.
   findInput.maxLength = currentExplore.data.length;
   findInput.value = "";
+  findInput.setAttribute("aria-expanded", "true");
   findInput.focus();
   applyFind("");
 }
@@ -65,18 +72,25 @@ function openFind() {
 function closeFind() {
   findBar.hidden = true;
   findInput.value = "";
+  findInput.setAttribute("aria-expanded", "false");
   findCount.textContent = "";
+  findMatches = [];
+  findSelected = 0;
+  findResults.hidden = true;
+  findResults.innerHTML = "";
   if (cy) cy.elements().removeClass("dimmed");
 }
 
 function applyFind(prefix) {
   if (!cy || !currentExplore) return;
   const wanted = prefix.toLowerCase();
-  let matches = 0;
+  const matches = [];
   cy.batch(() => {
     cy.nodes().forEach((node) => {
       const hit = wanted === "" || node.data("label").startsWith(wanted);
-      if (hit && wanted !== "") matches++;
+      if (hit && wanted !== "") {
+        matches.push({ word: node.data("label"), distance: node.data("distance") });
+      }
       node.toggleClass("dimmed", !hit);
     });
     cy.edges().forEach((edge) => {
@@ -84,13 +98,57 @@ function applyFind(prefix) {
       edge.toggleClass("dimmed", dim);
     });
   });
+  // Nearest first: the same order the list reads in, and the same order Enter
+  // and the arrow keys walk through it.
+  matches.sort((a, b) => a.distance - b.distance || a.word.localeCompare(b.word));
+  findMatches = matches;
+  findSelected = 0;
   findCount.textContent =
-    wanted === "" ? "" : matches === 0 ? "no matches" : `${matches} word${matches === 1 ? "" : "s"}`;
+    wanted === "" ? "" : matches.length === 0 ? "no matches" : `${matches.length} word${matches.length === 1 ? "" : "s"}`;
+  renderFindResults();
+}
+
+function renderFindResults() {
+  const show = findMatches.length > 0 && findMatches.length < FIND_LIST_LIMIT;
+  findResults.hidden = !show;
+  findResults.innerHTML = "";
+  if (!show) return;
+  findMatches.forEach((match, index) => {
+    const item = document.createElement("li");
+    item.dataset.word = match.word;
+    item.setAttribute("role", "option");
+    item.setAttribute("aria-selected", String(index === findSelected));
+    item.classList.toggle("is-selected", index === findSelected);
+    const dot = document.createElement("span");
+    dot.className = "find-dot";
+    dot.style.setProperty("--dot", colorForDistance(match.distance));
+    const word = document.createElement("span");
+    word.className = "find-word";
+    word.textContent = match.word;
+    const distance = document.createElement("span");
+    distance.className = "find-distance";
+    distance.textContent =
+      match.distance === 0 ? "the searched word" : `${match.distance} change${match.distance === 1 ? "" : "s"}`;
+    item.append(dot, word, distance);
+    findResults.appendChild(item);
+  });
+}
+
+function moveFindSelection(delta) {
+  if (findResults.hidden || findMatches.length === 0) return;
+  findSelected = (findSelected + delta + findMatches.length) % findMatches.length;
+  renderFindResults();
 }
 
 // Walk to the closest match, which is what double-clicking it would do. Ties go
 // to the alphabetically first, so which one you land on is not insertion order.
 function walkToFind() {
+  // With the list on screen the selection is the answer -- Enter and the arrow
+  // keys are the same choice. Without it, take the closest.
+  if (!findResults.hidden && findMatches.length > 0) {
+    walkToWord(findMatches[findSelected].word);
+    return;
+  }
   const wanted = findInput.value.trim().toLowerCase();
   if (!wanted || !cy) return;
   const matches = cy.nodes().filter((node) => node.data("label").startsWith(wanted));
@@ -101,7 +159,10 @@ function walkToFind() {
     const tie = node.data("distance") === best.data("distance") && node.data("label") < best.data("label");
     if (closer || tie) best = node;
   });
-  const word = best.data("label");
+  walkToWord(best.data("label"));
+}
+
+function walkToWord(word) {
   closeFind();
   wordInput.value = word;
   explore();
@@ -619,10 +680,21 @@ findInput.addEventListener("keydown", (event) => {
     closeFind();
     return;
   }
+  if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+    event.preventDefault();
+    moveFindSelection(event.key === "ArrowDown" ? 1 : -1);
+    return;
+  }
   if (event.key === "Enter") {
     event.preventDefault();
     walkToFind();
   }
+});
+
+// Clicking a row is the same as selecting it and pressing Enter.
+findResults.addEventListener("click", (event) => {
+  const item = event.target.closest("li");
+  if (item) walkToWord(item.dataset.word);
 });
 
 // Cmd+F / Ctrl+F, but only when there is a graph to filter: on the landing

@@ -80,6 +80,8 @@
             type="text"
             placeholder="Find…"
             aria-label="Filter the words on screen"
+            aria-controls="find-results"
+            aria-expanded="false"
             autocomplete="off"
             autocapitalize="none"
             autocorrect="off"
@@ -87,6 +89,9 @@
           />
           <span id="find-count" aria-live="polite"></span>
           <button id="find-close" type="button" aria-label="Close find">×</button>
+          <!-- Filled in only while the matches are few enough to list; see
+               FIND_LIST_LIMIT in main.js. -->
+          <ul id="find-results" role="listbox" aria-label="Matching words" hidden></ul>
         </div>
       </main>
     </div>

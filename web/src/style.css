@@ -432,6 +432,65 @@ body[data-view="landing"] #status {
   color: var(--ink);
 }
 
+/* The matches themselves, listed under the bar once the prefix has narrowed
+   things enough that the words are the answer. Above that threshold the list
+   would be longer than the thing it is pointing at, so it stays hidden. */
+#find-results {
+  position: absolute;
+  top: calc(100% + 0.35rem);
+  right: 0;
+  min-width: 100%;
+  max-height: 18rem;
+  overflow-y: auto;
+  margin: 0;
+  padding: 0.25rem;
+  list-style: none;
+  border: 1px solid var(--line);
+  border-radius: 0.6rem;
+  background: #ffffff;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.12);
+}
+
+#find-results[hidden] {
+  display: none;
+}
+
+#find-results li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.4rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+#find-results li:hover,
+#find-results li.is-selected {
+  background: #f1f5f9;
+}
+
+/* The ring colour, so a row points at the right ring of the graph. */
+.find-dot {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  background: var(--dot, var(--accent));
+  flex-shrink: 0;
+}
+
+.find-word {
+  font-family: var(--font-word);
+  color: var(--ink);
+}
+
+.find-distance {
+  margin-left: auto;
+  color: var(--ink-muted);
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
 /* An empty element is still a flex item, so the parent's gap would leave dead
    space after the name until something is hovered. */
 #hover-meta:empty {

@@ -88,8 +88,11 @@ node lists the shortest path to it in the left-hand panel; double-clicking it
 makes that word the searched word, rebuilding the graph around it. **Cmd/Ctrl+F**
 filters the words already on screen by prefix — non-matching words dim rather than
 disappear, so a match keeps its ring and you can still read how far away it is —
-and **Enter** walks to the closest one. The × in the search field — or
-**Escape** — clears back to the search screen.
+and **Enter** walks to the closest one. When the matches are few enough to read
+as a list — under twenty — they appear under the bar, nearest first, with
+**↑**/**↓** to move between them and Enter to walk to the selected one; clicking
+one does the same. The × in the search field — or **Escape** — clears back to the
+search screen.
 
 To produce a static production build instead:
 
