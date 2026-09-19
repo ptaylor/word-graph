@@ -16,6 +16,10 @@ const hoverWord = document.getElementById("hover-word");
 const hoverMeta = document.getElementById("hover-meta");
 const pathPanel = document.getElementById("path-panel");
 const pathList = document.getElementById("path-list");
+const findBar = document.getElementById("find-bar");
+const findInput = document.getElementById("find-input");
+const findCount = document.getElementById("find-count");
+const findClose = document.getElementById("find-close");
 const layoutButtons = [...document.querySelectorAll(".layout-option")];
 
 let cy = null;
@@ -40,7 +44,67 @@ function setView(view) {
     hidePathPanel();
     currentExplore = null;
     resetHoverTitle();
+    closeFind();
   }
+}
+
+// Cmd/Ctrl+F filters the words already on screen by prefix -- a different job
+// from the header's search field, which starts a new search. Nothing is removed
+// from the graph: non-matching words dim, so a match keeps its ring and you can
+// still read how far away it is.
+function openFind() {
+  if (!currentExplore) return;
+  findBar.hidden = false;
+  // The field only accepts words of the length this graph is made of.
+  findInput.maxLength = currentExplore.data.length;
+  findInput.value = "";
+  findInput.focus();
+  applyFind("");
+}
+
+function closeFind() {
+  findBar.hidden = true;
+  findInput.value = "";
+  findCount.textContent = "";
+  if (cy) cy.elements().removeClass("dimmed");
+}
+
+function applyFind(prefix) {
+  if (!cy || !currentExplore) return;
+  const wanted = prefix.toLowerCase();
+  let matches = 0;
+  cy.batch(() => {
+    cy.nodes().forEach((node) => {
+      const hit = wanted === "" || node.data("label").startsWith(wanted);
+      if (hit && wanted !== "") matches++;
+      node.toggleClass("dimmed", !hit);
+    });
+    cy.edges().forEach((edge) => {
+      const dim = edge.source().hasClass("dimmed") || edge.target().hasClass("dimmed");
+      edge.toggleClass("dimmed", dim);
+    });
+  });
+  findCount.textContent =
+    wanted === "" ? "" : matches === 0 ? "no matches" : `${matches} word${matches === 1 ? "" : "s"}`;
+}
+
+// Walk to the closest match, which is what double-clicking it would do. Ties go
+// to the alphabetically first, so which one you land on is not insertion order.
+function walkToFind() {
+  const wanted = findInput.value.trim().toLowerCase();
+  if (!wanted || !cy) return;
+  const matches = cy.nodes().filter((node) => node.data("label").startsWith(wanted));
+  if (matches.length === 0) return;
+  let best = matches[0];
+  matches.forEach((node) => {
+    const closer = node.data("distance") < best.data("distance");
+    const tie = node.data("distance") === best.data("distance") && node.data("label") < best.data("label");
+    if (closer || tie) best = node;
+  });
+  const word = best.data("label");
+  closeFind();
+  wordInput.value = word;
+  explore();
 }
 
 function debounce(fn, delayMs) {
@@ -444,6 +508,13 @@ async function explore() {
   // the space the graph actually has.
   cy.resize();
   centreOnRoot();
+  // A re-render rebuilds the elements, so any dimming is gone. Put it back if
+  // the find bar is still open -- the distance slider and the layout switch both
+  // re-render underneath it.
+  if (!findBar.hidden) {
+    findInput.maxLength = currentExplore.data.length;
+    applyFind(findInput.value);
+  }
   setStatus(`${nodes.length} words within ${maxDistance} change(s) of "${word}".`);
 }
 
@@ -531,6 +602,37 @@ window.addEventListener("resize", debounce(() => {
 distanceMaxSlider.addEventListener("input", () => {
   updateDistanceLabel();
   debouncedDistanceChange();
+});
+
+findClose.addEventListener("click", closeFind);
+
+findInput.addEventListener("input", () => {
+  // Letters only: every word in the dictionary is a-z.
+  const cleaned = findInput.value.toLowerCase().replace(/[^a-z]/g, "");
+  if (cleaned !== findInput.value) findInput.value = cleaned;
+  applyFind(cleaned);
+});
+
+findInput.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") {
+    event.preventDefault();
+    closeFind();
+    return;
+  }
+  if (event.key === "Enter") {
+    event.preventDefault();
+    walkToFind();
+  }
+});
+
+// Cmd+F / Ctrl+F, but only when there is a graph to filter: on the landing
+// screen the browser's own find is the right thing to leave alone.
+document.addEventListener("keydown", (event) => {
+  if (event.key !== "f" || !(event.metaKey || event.ctrlKey)) return;
+  if (document.body.dataset.view !== "graph") return;
+  event.preventDefault();
+  if (findBar.hidden) openFind();
+  else findInput.select();
 });
 
 init().catch((err) => {

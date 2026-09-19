@@ -260,5 +260,20 @@ export function buildStylesheet(tier) {
         "z-index": 6,
       },
     },
+    {
+      // Find (Cmd/Ctrl+F). The non-matching words are "out" without being taken
+      // off the canvas, so the graph keeps its shape and the matches are simply
+      // what is left to look at. Dimming rather than hiding matters here because
+      // a node's ring is the thing worth keeping: a match still shows how many
+      // changes away it is.
+      selector: "node.dimmed",
+      style: { opacity: 0.15 },
+    },
+    {
+      // An edge stays bright only if both ends match, or the strands running off
+      // to filtered-out words would read as part of the result.
+      selector: "edge.dimmed",
+      style: { opacity: 0.06 },
+    },
   ];
 }

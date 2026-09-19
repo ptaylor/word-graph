@@ -372,6 +372,66 @@ body[data-view="landing"] #status {
   display: inline-block;
 }
 
+/* --------------------------------------------------------------- find bar --
+   Cmd/Ctrl+F filters the words already on screen, which is a different job from
+   the header's search field (that one starts a new search), so it floats over
+   the canvas and is only present while it is open. */
+#find-bar {
+  position: absolute;
+  top: 0.8rem;
+  right: 0.8rem;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.3rem 0.35rem 0.3rem 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #ffffff;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.08);
+  font-size: 0.8rem;
+}
+
+/* display:flex above beats the UA rule for [hidden], so restate it. */
+#find-bar[hidden] {
+  display: none;
+}
+
+#find-input {
+  width: 7rem;
+  border: none;
+  outline: none;
+  background: transparent;
+  /* A word, so monospace, like every other word in the app. */
+  font-family: var(--font-word);
+  font-size: 0.95rem;
+  color: var(--ink);
+}
+
+#find-input::placeholder {
+  font-family: system-ui, sans-serif;
+  color: #94a3b8;
+}
+
+#find-count {
+  color: var(--ink-muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+#find-close {
+  border: none;
+  background: transparent;
+  color: var(--ink-muted);
+  font-size: 1.1rem;
+  line-height: 1;
+  padding: 0 0.35rem;
+  cursor: pointer;
+}
+
+#find-close:hover {
+  color: var(--ink);
+}
+
 /* An empty element is still a flex item, so the parent's gap would leave dead
    space after the name until something is hovered. */
 #hover-meta:empty {

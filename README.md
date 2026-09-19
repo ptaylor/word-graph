@@ -85,8 +85,11 @@ may reach none at all) and re-runs the search, and **Rings**/**Organic** switche
 that subgraph is laid out — rings draw the change distance as literal distance
 from the searched word, organic packs the same words more tightly. Clicking a
 node lists the shortest path to it in the left-hand panel; double-clicking it
-makes that word the searched word, rebuilding the graph around it. The × in the
-search field — or **Escape** — clears back to the search screen.
+makes that word the searched word, rebuilding the graph around it. **Cmd/Ctrl+F**
+filters the words already on screen by prefix — non-matching words dim rather than
+disappear, so a match keeps its ring and you can still read how far away it is —
+and **Enter** walks to the closest one. The × in the search field — or
+**Escape** — clears back to the search screen.
 
 To produce a static production build instead:
 

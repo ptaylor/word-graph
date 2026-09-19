@@ -70,6 +70,24 @@
       </aside>
       <main id="graph-container">
         <div id="legend" hidden></div>
+
+        <!-- Cmd/Ctrl+F. Distinct from the header's search field, which starts a
+             new search: this one filters the words already on screen, so it
+             floats over the canvas and is only there while it is open. -->
+        <div id="find-bar" hidden>
+          <input
+            id="find-input"
+            type="text"
+            placeholder="Find…"
+            aria-label="Filter the words on screen"
+            autocomplete="off"
+            autocapitalize="none"
+            autocorrect="off"
+            spellcheck="false"
+          />
+          <span id="find-count" aria-live="polite"></span>
+          <button id="find-close" type="button" aria-label="Close find">×</button>
+        </div>
       </main>
     </div>
 
