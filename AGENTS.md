@@ -235,6 +235,22 @@ Full specification: [`graph/README.md`](graph/README.md).
     the layout and on the elements did not clear it. Both layouts place instantly
     anyway (breadthfirst is 119ms at 566 words), and node styles still transition
     width and colour, so the graph is not visibly abrupt.
+  - **Overlays inside the container need a `z-index`.** Cytoscape appends its own
+    wrapper to the container as a later sibling with `position: relative;
+    z-index: 0`, and a positioned element with z-index 0 paints after positioned
+    siblings left on `auto` — so the canvas sits on top of anything you put in
+    there. The legend looked fine because it is not interactive and the canvas is
+    transparent except where the graph is drawn; the find bar's × did nothing,
+    because its clicks were landing on the canvas.
+  - **Cytoscape interferes with anything interactive you nest in the container.**
+    It cancels the default action of `mousedown` over the container, so a nested
+    input could not be focused by clicking it (typing only worked while `openFind()`
+    held focus) — `stopPropagation()` on the overlay's own `mousedown`/`click`
+    fixes that. And it binds `wheel` with `registerBinding(container, "wheel",
+    handler, true)`, i.e. in the **capture** phase on the container, so it sees the
+    event before anything bound nearer the target: a wheel over the overlay zoomed
+    the graph and scrolled the page. Only a capture listener on `window` is earlier
+    in the capture order, so that is where the wheel guard has to live.
   - `cy.layout(options)` runs the layout immediately — use `cy.makeLayout()` when
     you intend to call `run()` yourself, or the layout runs twice and stopping it
     only clears half.

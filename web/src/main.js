@@ -89,7 +89,7 @@ function applyFind(prefix) {
     cy.nodes().forEach((node) => {
       const hit = wanted === "" || node.data("label").startsWith(wanted);
       if (hit && wanted !== "") {
-        matches.push({ word: node.data("label"), distance: node.data("distance") });
+        matches.push({ word: node.data("label"), distance: node.data("distance"), id: node.id() });
       }
       node.toggleClass("dimmed", !hit);
     });
@@ -106,6 +106,15 @@ function applyFind(prefix) {
   findCount.textContent =
     wanted === "" ? "" : matches.length === 0 ? "no matches" : `${matches.length} word${matches.length === 1 ? "" : "s"}`;
   renderFindResults();
+  // Narrowed to one word, that word is the answer, so select it: the same path
+  // highlight a click would give, from the searched word out to it. Clearing the
+  // prefix puts the panel back on the searched word. Anything in between leaves
+  // the panel alone rather than flickering on every keystroke.
+  if (wanted === "") {
+    showPath(currentExplore.startIndex);
+  } else if (matches.length === 1) {
+    showPath(Number(matches[0].id));
+  }
 }
 
 function renderFindResults() {
@@ -696,6 +705,26 @@ findResults.addEventListener("click", (event) => {
   const item = event.target.closest("li");
   if (item) walkToWord(item.dataset.word);
 });
+
+// The bar is nested inside the element cytoscape listens on, and cytoscape
+// cancels the default action of a mousedown over it -- which is exactly what
+// stops a click here focusing the input, so the field could only be typed into
+// while it held focus from openFind(). Keeping these to ourselves fixes that, and
+// stops a click on the bar reading as a click on the graph behind it.
+for (const type of ["mousedown", "mouseup", "click", "dblclick", "contextmenu"]) {
+  findBar.addEventListener(type, (event) => event.stopPropagation());
+}
+
+// Wheel needs a different trick: cytoscape binds its handler with
+// registerBinding(container, "wheel", handler, true) -- the capture phase, on the
+// container -- so it sees the event before anything bound closer to the target,
+// and the bar's own listener above never gets a say. A capture listener on the
+// window is earlier still in the capture order, so this is the one place a wheel
+// aimed at the find list can be kept from zooming the graph. It is not
+// preventDefault()ed, so the list still scrolls itself.
+window.addEventListener("wheel", (event) => {
+  if (event.target instanceof Element && event.target.closest("#find-bar")) event.stopPropagation();
+}, true);
 
 // Cmd+F / Ctrl+F, but only when there is a graph to filter: on the landing
 // screen the browser's own find is the right thing to leave alone.
