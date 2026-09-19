@@ -5,6 +5,8 @@
 
 # word-graph
 
+![Word Graph screenshot](readme-graph.png)
+
 Builds and visualizes a graph of words connected by a single letter change
 (the classic "word ladder" adjacency): two words are connected by an edge if
 they are the **same length** and differ in **exactly one letter position**
