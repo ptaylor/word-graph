@@ -79,6 +79,10 @@ function closeFind() {
   findResults.hidden = true;
   findResults.innerHTML = "";
   if (cy) cy.elements().removeClass("dimmed");
+  // Closing the filter ends the preview it was showing, so the panel goes back
+  // to the searched word -- where an emptied prefix leaves it. On the landing
+  // screen there is no search to go back to and currentExplore is already null.
+  if (currentExplore) showPath(currentExplore.startIndex);
 }
 
 function applyFind(prefix) {
@@ -124,7 +128,6 @@ function renderFindResults() {
   if (!show) return;
   findMatches.forEach((match, index) => {
     const item = document.createElement("li");
-    item.dataset.word = match.word;
     item.setAttribute("role", "option");
     item.setAttribute("aria-selected", String(index === findSelected));
     item.classList.toggle("is-selected", index === findSelected);
@@ -145,17 +148,33 @@ function renderFindResults() {
 
 function moveFindSelection(delta) {
   if (findResults.hidden || findMatches.length === 0) return;
-  findSelected = (findSelected + delta + findMatches.length) % findMatches.length;
-  renderFindResults();
+  selectFindMatch((findSelected + delta + findMatches.length) % findMatches.length);
 }
 
-// Walk to the closest match, which is what double-clicking it would do. Ties go
-// to the alphabetically first, so which one you land on is not insertion order.
+// Choosing a match is a move within the words already on screen, not a new
+// search: the word becomes the target, so the route out to it lights up in the
+// graph and the panel lists it -- the same thing a click on its node does.
+// Re-rooting stays where it has always been: the header's field, or a
+// double-click on a node.
+function selectFindMatch(index) {
+  const match = findMatches[index];
+  if (!match) return;
+  findSelected = index;
+  // Restate the selection in place rather than re-rendering the list, which
+  // would throw away the scroll position and start a long list over at the top.
+  [...findResults.children].forEach((item, i) => {
+    item.setAttribute("aria-selected", String(i === findSelected));
+    item.classList.toggle("is-selected", i === findSelected);
+  });
+  showPath(Number(match.id));
+}
+
+// Enter picks the selection, or -- when there are too many matches to list --
+// the closest one, ties going to the alphabetically first, so which one you
+// land on is not insertion order.
 function walkToFind() {
-  // With the list on screen the selection is the answer -- Enter and the arrow
-  // keys are the same choice. Without it, take the closest.
   if (!findResults.hidden && findMatches.length > 0) {
-    walkToWord(findMatches[findSelected].word);
+    selectFindMatch(findSelected);
     return;
   }
   const wanted = findInput.value.trim().toLowerCase();
@@ -168,13 +187,7 @@ function walkToFind() {
     const tie = node.data("distance") === best.data("distance") && node.data("label") < best.data("label");
     if (closer || tie) best = node;
   });
-  walkToWord(best.data("label"));
-}
-
-function walkToWord(word) {
-  closeFind();
-  wordInput.value = word;
-  explore();
+  showPath(Number(best.id()));
 }
 
 function debounce(fn, delayMs) {
@@ -703,7 +716,8 @@ findInput.addEventListener("keydown", (event) => {
 // Clicking a row is the same as selecting it and pressing Enter.
 findResults.addEventListener("click", (event) => {
   const item = event.target.closest("li");
-  if (item) walkToWord(item.dataset.word);
+  if (!item) return;
+  selectFindMatch([...findResults.children].indexOf(item));
 });
 
 // The bar is nested inside the element cytoscape listens on, and cytoscape

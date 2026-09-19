@@ -295,7 +295,10 @@ Full specification: [`graph/README.md`](graph/README.md).
   graph and run BFS distance queries: click a word to list the path to it,
   double-click it to re-root the search on that word, or Cmd/Ctrl+F to filter the
   words on screen by prefix (they dim rather than disappear, so a match keeps its
-  ring; under `FIND_LIST_LIMIT` matches they are also listed under the bar).
+  ring; under `FIND_LIST_LIMIT` matches they are also listed under the bar, and
+  picking one targets that word rather than re-rooting — the route lights up in
+  the graph and in the panel, and closing the bar puts the panel back on the
+  searched word).
   `web/public/graph` is a symlink to the top-level `graph/` directory.
   [`web/swatch.html`](web/swatch.html)
   is a standalone measurement sheet (palette and type options, with a

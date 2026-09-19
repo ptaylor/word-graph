@@ -87,14 +87,16 @@ from the searched word, organic packs the same words more tightly. Clicking a
 node lists the shortest path to it in the left-hand panel; double-clicking it
 makes that word the searched word, rebuilding the graph around it. **Cmd/Ctrl+F**
 filters the words already on screen by prefix — non-matching words dim rather than
-disappear, so a match keeps its ring and you can still read how far away it is —
-and **Enter** walks to the closest one. When the matches are few enough to read
-as a list — under twenty — they appear under the bar, nearest first, with
-**↑**/**↓** to move between them and Enter to walk to the selected one; clicking
-one does the same. Narrow the prefix to a single word and that word becomes the
-target without a click: the graph highlights the path out to it and the panel
-lists it. The × in the search field — or **Escape** — clears back to the search
-screen.
+disappear, so a match keeps its ring and you can still read how far away it is.
+When the matches are few enough to read as a list — under twenty — they appear
+under the bar, nearest first, with **↑**/**↓** to move between them and **Enter**
+to pick the selected one; clicking one does the same. Picking a match stays within
+the words already on screen rather than starting a new search: that word becomes
+the target, so the graph highlights the route out to it and the left-hand panel
+lists it, exactly as clicking its node would. Narrow the prefix to a single word
+and that word is picked for you. To re-root the search on a word instead, use the
+header's field or double-click its node. The find bar's × — or **Escape** —
+clears the filter.
 
 To produce a static production build instead:
 
