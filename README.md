@@ -1,6 +1,6 @@
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="web/public/logo-inverse.svg" />
-  <img src="web/public/logo.svg" alt="Word Graph" width="72" height="72" align="right" />
+  <img src="web/public/logo.svg" alt="Word Graph" width="72" height="72" align="left" />
 </picture>
 
 # word-graph
